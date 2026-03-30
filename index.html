@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PollCraft | Интерактивные опросы</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -1006,8 +1010,8 @@
                     <h1 class="section-title">Создайте опрос</h1>
                     <p class="section-subtitle">Задайте вопрос и добавьте варианты ответов</p>
                     
-                    <div class="sync-status" id="sync-status">
-                        <span>☁️</span> Синхронизация через GitHub (общая для всех пользователей)
+                    <div class="sync-status synced" id="sync-status">
+                        <span>☁️</span> Онлайн режим — данные синхронизируются автоматически
                     </div>
 
                     <form id="poll-form">
@@ -1045,12 +1049,6 @@
                 <h1 class="section-title">Все опросы</h1>
                 <p class="section-subtitle" id="polls-subtitle">Голосуйте и смотрите результаты в реальном времени</p>
                 
-                <div style="margin-bottom: 1.5rem;">
-                    <button class="btn btn-secondary" onclick="loadPollsFromGitHub()" style="width: auto; padding: 0.8rem 1.5rem; font-size: 0.9rem;">
-                        <span>🔄</span> Обновить список
-                    </button>
-                </div>
-                
                 <div id="polls-container" class="polls-grid">
                     <!-- Polls rendered here -->
                 </div>
@@ -1064,22 +1062,40 @@
     </div>
 
     <script>
-        // ==================== CONFIGURATION ====================
-        // ВАЖНО: Замените эти значения на свои!
-        const CONFIG = {
-            // Ваш GitHub токен (создайте на github.com/settings/tokens с правами repo или public_repo)
-            // Для безопасности лучше использовать GitHub Actions вместо хардкода токена
-            GITHUB_TOKEN: 'ghp_ВАШ_ТОКЕН_ЗДЕСЬ', 
-            REPO_OWNER: 'ВАШ_НИКНЕЙМ', // Например: 'ivanov'
-            REPO_NAME: 'pollcraft', // Название репозитория
-            DATA_FILE: 'polls-data.json' // Файл для хранения опросов
+        // ==================== FIREBASE CONFIGURATION ====================
+        // ЗАМЕНИТЕ ЭТИ ДАННЫЕ НА СВОИ ИЗ КОНСОЛИ FIREBASE!
+        const firebaseConfig = {
+            apiKey: "AIzaSy...",
+            authDomain: "ваш-проект.firebaseapp.com",
+            databaseURL: "https://ваш-проект-default-rtdb.firebaseio.com",
+            projectId: "ваш-проект",
+            storageBucket: "ваш-проект.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef123456"
         };
+
+        // Инициализация Firebase
+        let app, database, auth;
+        let firebaseInitialized = false;
+
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            auth = firebase.auth();
+            firebaseInitialized = true;
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            // Режим fallback — localStorage
+            firebaseInitialized = false;
+        }
 
         // ==================== STATE MANAGEMENT ====================
         let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
         let users = JSON.parse(localStorage.getItem('users')) || [];
         let polls = [];
-        let votes = JSON.parse(localStorage.getItem('votes')) || {}; // Локальные голоса пользователя
+        let votes = JSON.parse(localStorage.getItem('votes')) || {};
+        let pollsRef = null;
 
         // ==================== CONFETTI ====================
         const confettiCanvas = document.getElementById('confetti');
@@ -1128,116 +1144,102 @@
         }
         updateConfetti();
 
-        // ==================== GITHUB API FUNCTIONS ====================
+        // ==================== FIREBASE FUNCTIONS ====================
         
-        // Получить данные из репозитория
-        async function loadPollsFromGitHub() {
-            showLoading(true);
-            try {
-                const response = await fetch(
-                    `https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/contents/${CONFIG.DATA_FILE}?ref=main`,
-                    {
-                        headers: {
-                            'Authorization': `token ${CONFIG.GITHUB_TOKEN}`,
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                    }
-                );
-
-                if (response.status === 404) {
-                    // Файл не существует, создадим пустой
-                    polls = [];
-                    await savePollsToGitHub();
-                } else if (response.ok) {
-                    const data = await response.json();
-                    const content = atob(data.content);
-                    const parsed = JSON.parse(content);
-                    polls = parsed.polls || [];
-                    // Обновляем votes из общих данных + локальные
-                    updateSyncStatus('synced');
-                    showToast('Данные синхронизированы', 'success');
-                } else {
-                    throw new Error('Failed to load');
-                }
-            } catch (error) {
-                console.error('Error loading from GitHub:', error);
+        function initFirebaseListeners() {
+            if (!firebaseInitialized) {
                 // Fallback: загружаем из localStorage
                 polls = JSON.parse(localStorage.getItem('polls')) || [];
-                updateSyncStatus('offline');
-                showToast('Оффлайн режим (GitHub API недоступен)', 'error');
-            } finally {
-                showLoading(false);
                 renderPolls();
+                return;
+            }
+
+            pollsRef = database.ref('polls');
+            
+            // Слушаем изменения в реальном времени
+            pollsRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    // Преобразуем объект в массив
+                    polls = Object.keys(data).map(key => ({
+                        id: key,
+                        ...data[key]
+                    })).sort((a, b) => b.createdAt - a.createdAt);
+                } else {
+                    polls = [];
+                }
+                renderPolls();
+                updateSyncStatus('synced');
+            }, (error) => {
+                console.error('Firebase read failed:', error);
+                updateSyncStatus('offline');
+                // Fallback
+                polls = JSON.parse(localStorage.getItem('polls')) || [];
+                renderPolls();
+            });
+        }
+
+        async function savePoll(poll) {
+            if (!firebaseInitialized) {
+                // Fallback: сохраняем в localStorage
+                polls.unshift(poll);
+                localStorage.setItem('polls', JSON.stringify(polls));
+                return true;
+            }
+
+            try {
+                const newPollRef = pollsRef.push();
+                await newPollRef.set({
+                    ...poll,
+                    id: newPollRef.key,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                });
+                return true;
+            } catch (error) {
+                console.error('Save failed:', error);
+                // Fallback
+                polls.unshift(poll);
+                localStorage.setItem('polls', JSON.stringify(polls));
+                return false;
             }
         }
 
-        // Сохранить данные в репозиторий
-        async function savePollsToGitHub() {
-            updateSyncStatus('syncing');
-            
+        async function updatePoll(pollId, updates) {
+            if (!firebaseInitialized) {
+                const idx = polls.findIndex(p => p.id === pollId);
+                if (idx !== -1) {
+                    polls[idx] = { ...polls[idx], ...updates };
+                    localStorage.setItem('polls', JSON.stringify(polls));
+                }
+                return;
+            }
+
             try {
-                // Сначала получаем текущий SHA файла (если существует)
-                let sha = null;
-                try {
-                    const getResponse = await fetch(
-                        `https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/contents/${CONFIG.DATA_FILE}?ref=main`,
-                        {
-                            headers: {
-                                'Authorization': `token ${CONFIG.GITHUB_TOKEN}`,
-                                'Accept': 'application/vnd.github.v3+json'
-                            }
-                        }
-                    );
-                    if (getResponse.ok) {
-                        const data = await getResponse.json();
-                        sha = data.sha;
-                    }
-                } catch (e) {
-                    // Файл не существует, создадим новый
-                }
-
-                const content = btoa(JSON.stringify({
-                    polls: polls,
-                    lastUpdated: new Date().toISOString(),
-                    updatedBy: currentUser?.username || 'anonymous'
-                }, null, 2));
-
-                const body = {
-                    message: `Обновление опросов от ${currentUser?.username || 'anonymous'} - ${new Date().toLocaleString('ru-RU')}`,
-                    content: content,
-                    branch: 'main'
-                };
-
-                if (sha) {
-                    body.sha = sha;
-                }
-
-                const response = await fetch(
-                    `https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/contents/${CONFIG.DATA_FILE}`,
-                    {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `token ${CONFIG.GITHUB_TOKEN}`,
-                            'Accept': 'application/vnd.github.v3+json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(body)
-                    }
-                );
-
-                if (response.ok) {
-                    updateSyncStatus('synced');
-                    return true;
-                } else {
-                    throw new Error('Failed to save');
-                }
+                await database.ref(`polls/${pollId}`).update(updates);
             } catch (error) {
-                console.error('Error saving to GitHub:', error);
-                // Fallback: сохраняем в localStorage
+                console.error('Update failed:', error);
+                // Fallback
+                const idx = polls.findIndex(p => p.id === pollId);
+                if (idx !== -1) {
+                    polls[idx] = { ...polls[idx], ...updates };
+                    localStorage.setItem('polls', JSON.stringify(polls));
+                }
+            }
+        }
+
+        async function deletePollFromFirebase(pollId) {
+            if (!firebaseInitialized) {
+                polls = polls.filter(p => p.id !== pollId);
                 localStorage.setItem('polls', JSON.stringify(polls));
-                updateSyncStatus('offline');
-                showToast('Сохранено локально (GitHub API недоступен)', 'error');
-                return false;
+                return;
+            }
+
+            try {
+                await database.ref(`polls/${pollId}`).remove();
+            } catch (error) {
+                console.error('Delete failed:', error);
+                polls = polls.filter(p => p.id !== pollId);
+                localStorage.setItem('polls', JSON.stringify(polls));
             }
         }
 
@@ -1248,12 +1250,12 @@
             el.className = 'sync-status';
             if (status === 'synced') {
                 el.classList.add('synced');
-                el.innerHTML = '<span>✓</span> Синхронизировано с GitHub';
+                el.innerHTML = '<span>✓</span> Онлайн — данные синхронизированы';
             } else if (status === 'syncing') {
                 el.classList.add('syncing');
                 el.innerHTML = '<span></span> Синхронизация...';
             } else if (status === 'offline') {
-                el.innerHTML = '<span>⚠️</span> Оффлайн режим (данные локальные)';
+                el.innerHTML = '<span>⚠️</span> Оффлайн режим';
             }
         }
 
@@ -1265,7 +1267,7 @@
         function init() {
             if (currentUser) {
                 showApp();
-                loadPollsFromGitHub(); // Загружаем при входе
+                initFirebaseListeners();
             } else {
                 showAuth();
             }
@@ -1352,7 +1354,7 @@
             currentUser = user;
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             showApp();
-            loadPollsFromGitHub(); // Загружаем опросы при входе
+            initFirebaseListeners();
             showToast('Добро пожаловать, ' + username + '!', 'success');
         });
 
@@ -1388,7 +1390,7 @@
             
             // Create user
             const newUser = {
-                id: Date.now(),
+                id: Date.now().toString(),
                 username: username,
                 password: password,
                 createdAt: new Date().toISOString()
@@ -1401,13 +1403,16 @@
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             
             showApp();
-            loadPollsFromGitHub();
+            initFirebaseListeners();
             showToast('Аккаунт создан успешно!', 'success');
         });
 
         function logout() {
             currentUser = null;
             localStorage.removeItem('currentUser');
+            if (pollsRef) {
+                pollsRef.off();
+            }
             showAuth();
             showLogin();
             document.getElementById('login-form-element').reset();
@@ -1481,20 +1486,19 @@
                 return;
             }
 
+            updateSyncStatus('syncing');
+
             const poll = {
-                id: Date.now(),
                 question,
                 options,
                 authorId: currentUser.id,
                 authorName: currentUser.username,
-                createdAt: new Date().toLocaleDateString('ru-RU'),
+                createdAt: Date.now(),
                 totalVotes: 0
             };
 
-            polls.unshift(poll);
+            const saved = await savePoll(poll);
             
-            // Сохраняем на GitHub
-            const saved = await savePollsToGitHub();
             if (saved) {
                 showToast('Опрос опубликован!', 'success');
             }
@@ -1535,18 +1539,20 @@
                 const userVoteIndex = votes[poll.id];
                 const maxVotes = Math.max(...poll.options.map(o => o.votes));
                 
+                const dateStr = poll.createdAt ? new Date(poll.createdAt).toLocaleDateString('ru-RU') : '';
+                
                 return `
                     <div class="poll-card" data-id="${poll.id}">
-                        ${isOwner ? `<button class="delete-btn" onclick="deletePoll(${poll.id})" title="Удалить мой опрос">×</button>` : ''}
+                        ${isOwner ? `<button class="delete-btn" onclick="deletePoll('${poll.id}')" title="Удалить мой опрос">×</button>` : ''}
                         
                         <div class="poll-header">
                             <div class="poll-title">${escapeHtml(poll.question)}</div>
                             <div class="poll-meta">
                                 <div class="poll-author">
-                                    <div class="author-avatar">${poll.authorName[0].toUpperCase()}</div>
-                                    <span>${escapeHtml(poll.authorName)}</span>
+                                    <div class="author-avatar">${poll.authorName ? poll.authorName[0].toUpperCase() : '?'}</div>
+                                    <span>${escapeHtml(poll.authorName || 'Unknown')}</span>
                                 </div>
-                                <span class="poll-date">${poll.createdAt}</span>
+                                <span class="poll-date">${dateStr}</span>
                                 ${isOwner ? '<span class="poll-status status-owner">Мой</span>' : ''}
                                 ${hasVoted && !isOwner ? '<span class="poll-status status-voted">Проголосовано</span>' : ''}
                                 ${!hasVoted && !isOwner ? '<span class="poll-status status-active">Активен</span>' : ''}
@@ -1563,7 +1569,7 @@
                                 
                                 return `
                                     <div class="option-item ${hasVoted ? 'disabled' : ''} ${isSelected ? 'selected' : ''}" 
-                                         onclick="${hasVoted ? '' : `vote(${poll.id}, ${idx})`}">
+                                         onclick="${hasVoted ? '' : `vote('${poll.id}', ${idx})`}">
                                         <div class="option-progress" style="width: ${hasVoted ? percentage : 0}%"></div>
                                         <div class="option-content">
                                             <span class="option-text">
@@ -1613,14 +1619,18 @@
                 return;
             }
             
+            // Обновляем локально
             poll.options[optionIndex].votes++;
             poll.totalVotes++;
             
             votes[pollId] = optionIndex;
             localStorage.setItem('votes', JSON.stringify(votes));
             
-            // Сохраняем на GitHub
-            await savePollsToGitHub();
+            // Обновляем в Firebase
+            await updatePoll(pollId, {
+                options: poll.options,
+                totalVotes: poll.totalVotes
+            });
             
             if (event) {
                 const rect = event.target.getBoundingClientRect();
@@ -1640,11 +1650,9 @@
             
             if (!confirm('Удалить этот опрос? Это действие нельзя отменить.')) return;
             
-            polls = polls.filter(p => p.id !== id);
+            await deletePollFromFirebase(id);
             delete votes[id];
             localStorage.setItem('votes', JSON.stringify(votes));
-            
-            await savePollsToGitHub();
             
             renderPolls();
             showToast('Опрос удалён', 'success');
