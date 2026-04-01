@@ -28,6 +28,7 @@
             --success: #00ff88;
             --error: #ff3366;
             --warning: #ffb800;
+            --admin: #ff00ff;
         }
 
         body {
@@ -248,6 +249,38 @@
             font-size: 0.9rem;
         }
 
+        .btn-danger {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            width: auto;
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 51, 102, 0.2);
+        }
+
+        .btn-admin {
+            background: linear-gradient(135deg, var(--admin), #cc00cc);
+            color: white;
+            box-shadow: 0 4px 20px rgba(255, 0, 255, 0.3);
+        }
+
+        .btn-admin:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(255, 0, 255, 0.4);
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
         .auth-switch {
             text-align: center;
             margin-top: 1.5rem;
@@ -360,6 +393,22 @@
             border-color: var(--primary);
         }
 
+        .tab.admin-tab {
+            border-color: var(--admin);
+            color: var(--admin);
+        }
+
+        .tab.admin-tab.active {
+            background: rgba(255, 0, 255, 0.1);
+            color: var(--admin);
+            border-color: var(--admin);
+        }
+
+        .tab.admin-tab:hover {
+            background: rgba(255, 0, 255, 0.05);
+            color: var(--admin);
+        }
+
         .user-menu {
             display: flex;
             align-items: center;
@@ -389,9 +438,30 @@
             color: var(--bg);
         }
 
+        .user-avatar.admin {
+            background: linear-gradient(135deg, var(--admin), #9900ff);
+            animation: adminPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes adminPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 0, 255, 0.4); }
+            50% { box-shadow: 0 0 20px 5px rgba(255, 0, 255, 0.2); }
+        }
+
         .user-name {
             font-weight: 600;
             font-size: 0.9rem;
+        }
+
+        .admin-badge {
+            background: var(--admin);
+            color: white;
+            font-size: 0.65rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.5px;
         }
 
         .btn-logout {
@@ -512,27 +582,6 @@
             flex-shrink: 0;
         }
 
-        .btn-danger {
-            background: rgba(255, 51, 102, 0.1);
-            color: var(--error);
-            border: 1px solid rgba(255, 51, 102, 0.3);
-            padding: 0.5rem 1rem;
-            font-size: 0.9rem;
-            width: auto;
-        }
-
-        .btn-danger:hover {
-            background: rgba(255, 51, 102, 0.2);
-        }
-
-        .btn-icon {
-            width: 36px;
-            height: 36px;
-            padding: 0;
-            justify-content: center;
-            border-radius: 50%;
-        }
-
         /* Polls Grid */
         .polls-grid {
             display: grid;
@@ -571,6 +620,14 @@
 
         .poll-card:hover::before {
             transform: scaleX(1);
+        }
+
+        .poll-card.admin-card {
+            border-color: rgba(255, 0, 255, 0.3);
+        }
+
+        .poll-card.admin-card::before {
+            background: linear-gradient(90deg, var(--admin), #9900ff);
         }
 
         .poll-header {
@@ -614,6 +671,10 @@
             color: var(--bg);
         }
 
+        .author-avatar.admin-avatar {
+            background: linear-gradient(135deg, var(--admin), #9900ff);
+        }
+
         .poll-date {
             font-size: 0.85rem;
             color: var(--text-muted);
@@ -643,6 +704,12 @@
             background: rgba(255, 184, 0, 0.1);
             color: var(--warning);
             border: 1px solid rgba(255, 184, 0, 0.3);
+        }
+
+        .status-admin {
+            background: rgba(255, 0, 255, 0.1);
+            color: var(--admin);
+            border: 1px solid rgba(255, 0, 255, 0.3);
         }
 
         .options-list {
@@ -781,6 +848,185 @@
             font-family: 'Syne', sans-serif;
         }
 
+        /* Admin Panel Styles */
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--admin), #9900ff);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255, 0, 255, 0.3);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-family: 'Syne', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--admin), #9900ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.3rem;
+        }
+
+        .admin-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .admin-section-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .admin-section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(180deg, var(--admin), #9900ff);
+            border-radius: 2px;
+        }
+
+        .users-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .user-item:hover {
+            border-color: rgba(255, 0, 255, 0.3);
+            background: rgba(255, 0, 255, 0.03);
+        }
+
+        .user-item-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-item-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--bg);
+        }
+
+        .user-item-avatar.admin {
+            background: linear-gradient(135deg, var(--admin), #9900ff);
+        }
+
+        .user-item-details h4 {
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+
+        .user-item-details span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .user-item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            width: auto;
+        }
+
+        .admin-filter {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .admin-filter input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .admin-filter select {
+            padding: 0.8rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 12px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .admin-filter select:focus {
+            outline: none;
+            border-color: var(--admin);
+        }
+
+        .danger-zone {
+            border-color: rgba(255, 51, 102, 0.3);
+            background: rgba(255, 51, 102, 0.05);
+        }
+
+        .danger-zone .admin-section-title::before {
+            background: var(--error);
+        }
+
         /* Toast */
         .toast {
             position: fixed;
@@ -814,6 +1060,8 @@
         .toast.success .toast-icon { color: var(--success); }
         .toast.error { border-color: rgba(255, 51, 102, 0.3); }
         .toast.error .toast-icon { color: var(--error); }
+        .toast.admin { border-color: rgba(255, 0, 255, 0.3); }
+        .toast.admin .toast-icon { color: var(--admin); }
 
         /* Confetti */
         #confetti {
@@ -871,6 +1119,7 @@
             .nav-tabs {
                 width: 100%;
                 justify-content: center;
+                flex-wrap: wrap;
             }
 
             .user-menu {
@@ -889,7 +1138,21 @@
             .auth-box {
                 padding: 2rem 1.5rem;
             }
-        }
+
+            .admin-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .user-item {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .user-item-actions {
+                width: 100%;
+                justify-content: center;
+                        }
 
         .hidden {
             display: none !important;
@@ -991,6 +1254,7 @@
                 <nav class="nav-tabs">
                     <button class="tab active" onclick="switchTab('create')" id="tab-create">Создать</button>
                     <button class="tab" onclick="switchTab('polls')" id="tab-polls">Опросы</button>
+                    <button class="tab admin-tab hidden" onclick="switchTab('admin')" id="tab-admin">Админ</button>
                 </nav>
             </div>
             
@@ -998,6 +1262,7 @@
                 <div class="user-info">
                     <div class="user-avatar" id="header-avatar">U</div>
                     <span class="user-name" id="header-username">User</span>
+                    <span class="admin-badge hidden" id="admin-badge">ADMIN</span>
                 </div>
                 <button class="btn-logout" onclick="logout()">Выйти</button>
             </div>
@@ -1053,6 +1318,87 @@
                     <!-- Polls rendered here -->
                 </div>
             </div>
+
+            <!-- Admin View -->
+            <div id="admin-view" class="view">
+                <h1 class="section-title" style="background: linear-gradient(135deg, var(--admin), #9900ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    Панель администратора
+                </h1>
+                <p class="section-subtitle">Управление системой, пользователями и опросами</p>
+
+                <!-- Statistics Cards -->
+                <div class="admin-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-value" id="stat-total-polls">0</div>
+                        <div class="stat-label">Всего опросов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🗳️</div>
+                        <div class="stat-value" id="stat-total-votes">0</div>
+                        <div class="stat-label">Всего голосов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-value" id="stat-total-users">0</div>
+                        <div class="stat-label">Пользователей</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📅</div>
+                        <div class="stat-value" id="stat-today-polls">0</div>
+                        <div class="stat-label">Опросов сегодня</div>
+                    </div>
+                </div>
+
+                <!-- Users Management -->
+                <div class="admin-section">
+                    <h2 class="admin-section-title">Управление пользователями</h2>
+                    <div class="admin-filter">
+                        <input type="text" id="user-search" placeholder="Поиск пользователей..." oninput="filterUsers()">
+                        <select id="user-filter-role" onchange="filterUsers()">
+                            <option value="all">Все роли</option>
+                            <option value="admin">Администраторы</option>
+                            <option value="user">Пользователи</option>
+                        </select>
+                    </div>
+                    <div class="users-list" id="users-list">
+                        <!-- Users rendered here -->
+                    </div>
+                </div>
+
+                <!-- All Polls Management -->
+                <div class="admin-section">
+                    <h2 class="admin-section-title">Все опросы в системе</h2>
+                    <div class="admin-filter">
+                        <input type="text" id="poll-search" placeholder="Поиск опросов..." oninput="renderAdminPolls()">
+                        <select id="poll-filter" onchange="renderAdminPolls()">
+                            <option value="all">Все опросы</option>
+                            <option value="recent">Последние 24ч</option>
+                            <option value="week">Последняя неделя</option>
+                            <option value="month">Последний месяц</option>
+                        </select>
+                    </div>
+                    <div id="admin-polls-container" class="polls-grid">
+                        <!-- Admin polls rendered here -->
+                    </div>
+                </div>
+
+                <!-- System Actions -->
+                <div class="admin-section danger-zone">
+                    <h2 class="admin-section-title">Опасная зона</h2>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button class="btn btn-danger" onclick="clearAllData()">
+                            <span>🗑️</span> Очистить все данные
+                        </button>
+                        <button class="btn btn-danger" onclick="exportData()">
+                            <span>💾</span> Экспорт данных (JSON)
+                        </button>
+                        <button class="btn btn-secondary" onclick="importData()">
+                            <span>📥</span> Импорт данных
+                        </button>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -1061,18 +1407,20 @@
         <span class="toast-message"></span>
     </div>
 
+    <input type="file" id="import-file" style="display: none;" accept=".json" onchange="handleImport(event)">
+
     <script>
         // ==================== FIREBASE CONFIGURATION ====================
-        // ЗАМЕНИТЕ ЭТИ ДАННЫЕ НА СВОИ ИЗ КОНСОЛИ FIREBASE!
         const firebaseConfig = {
-  apiKey: "AIzaSyD4TwVz9q35yB_ahYbQeJiQW7usRXbPaTc",
-  authDomain: "pollcraft1.firebaseapp.com",
-  databaseURL: "https://pollcraft1-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "pollcraft1",
-  storageBucket: "pollcraft1.firebasestorage.app",
-  messagingSenderId: "717690218593",
-  appId: "1:717690218593:web:a6ba225afed82d12f16220"
-};
+            apiKey: "AIzaSyD4TwVz9q35yB_ahYbQeJiQW7usRXbPaTc",
+            authDomain: "pollcraft1.firebaseapp.com",
+            databaseURL: "https://pollcraft1-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "pollcraft1",
+            storageBucket: "pollcraft1.firebasestorage.app",
+            messagingSenderId: "717690218593",
+            appId: "1:717690218593:web:a6ba225afed82d12f16220"
+        };
+
         // Инициализация Firebase
         let app, database, auth;
         let firebaseInitialized = false;
@@ -1085,7 +1433,6 @@
             console.log('Firebase initialized successfully');
         } catch (error) {
             console.error('Firebase initialization failed:', error);
-            // Режим fallback — localStorage
             firebaseInitialized = false;
         }
 
@@ -1095,6 +1442,10 @@
         let polls = [];
         let votes = JSON.parse(localStorage.getItem('votes')) || {};
         let pollsRef = null;
+        let usersRef = null;
+
+        // Admin usernames (hardcoded for demo - in production use proper role system)
+        const ADMIN_USERNAMES = ['admin', 'administrator', 'root', 'moderator'];
 
         // ==================== CONFETTI ====================
         const confettiCanvas = document.getElementById('confetti');
@@ -1109,7 +1460,7 @@
         window.addEventListener('resize', resizeCanvas);
 
         function createConfetti(x, y) {
-            const colors = ['#00d4ff', '#ff6b35', '#00ff88', '#ff3366', '#ffffff'];
+            const colors = ['#00d4ff', '#ff6b35', '#00ff88', '#ff3366', '#ffffff', '#ff00ff'];
             for (let i = 0; i < 50; i++) {
                 confettiParticles.push({
                     x: x || window.innerWidth / 2,
@@ -1143,23 +1494,58 @@
         }
         updateConfetti();
 
+        // ==================== ADMIN CHECK ====================
+        function isAdmin(user) {
+            if (!user) return false;
+            return user.isAdmin === true || ADMIN_USERNAMES.includes(user.username.toLowerCase());
+        }
+
+        function updateAdminUI() {
+            const isUserAdmin = isAdmin(currentUser);
+            const adminTab = document.getElementById('tab-admin');
+            const adminBadge = document.getElementById('admin-badge');
+            const headerAvatar = document.getElementById('header-avatar');
+            
+            if (isUserAdmin) {
+                adminTab.classList.remove('hidden');
+                adminBadge.classList.remove('hidden');
+                headerAvatar.classList.add('admin');
+                
+                // Ensure current user has admin flag
+                if (!currentUser.isAdmin) {
+                    currentUser.isAdmin = true;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    
+                    // Update in users array
+                    const userIdx = users.findIndex(u => u.id === currentUser.id);
+                    if (userIdx !== -1) {
+                        users[userIdx].isAdmin = true;
+                        localStorage.setItem('users', JSON.stringify(users));
+                    }
+                }
+            } else {
+                adminTab.classList.add('hidden');
+                adminBadge.classList.add('hidden');
+                headerAvatar.classList.remove('admin');
+            }
+        }
+
         // ==================== FIREBASE FUNCTIONS ====================
         
         function initFirebaseListeners() {
             if (!firebaseInitialized) {
-                // Fallback: загружаем из localStorage
                 polls = JSON.parse(localStorage.getItem('polls')) || [];
                 renderPolls();
                 return;
             }
 
             pollsRef = database.ref('polls');
+            usersRef = database.ref('users');
             
-            // Слушаем изменения в реальном времени
+            // Слушаем изменения опросов
             pollsRef.on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    // Преобразуем объект в массив
                     polls = Object.keys(data).map(key => ({
                         id: key,
                         ...data[key]
@@ -1168,19 +1554,43 @@
                     polls = [];
                 }
                 renderPolls();
+                updateAdminStats();
                 updateSyncStatus('synced');
             }, (error) => {
                 console.error('Firebase read failed:', error);
                 updateSyncStatus('offline');
-                // Fallback
                 polls = JSON.parse(localStorage.getItem('polls')) || [];
                 renderPolls();
             });
+
+            // Слушаем изменения пользователей если админ
+            if (isAdmin(currentUser) && usersRef) {
+                usersRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const firebaseUsers = Object.keys(data).map(key => ({
+                            id: key,
+                            ...data[key]
+                        }));
+                        // Merge with local users
+                        firebaseUsers.forEach(fbUser => {
+                            const idx = users.findIndex(u => u.id === fbUser.id);
+                            if (idx === -1) {
+                                users.push(fbUser);
+                            } else {
+                                users[idx] = fbUser;
+                            }
+                        });
+                        localStorage.setItem('users', JSON.stringify(users));
+                        renderUsersList();
+                        updateAdminStats();
+                    }
+                });
+            }
         }
 
         async function savePoll(poll) {
             if (!firebaseInitialized) {
-                // Fallback: сохраняем в localStorage
                 polls.unshift(poll);
                 localStorage.setItem('polls', JSON.stringify(polls));
                 return true;
@@ -1196,7 +1606,6 @@
                 return true;
             } catch (error) {
                 console.error('Save failed:', error);
-                // Fallback
                 polls.unshift(poll);
                 localStorage.setItem('polls', JSON.stringify(polls));
                 return false;
@@ -1217,7 +1626,6 @@
                 await database.ref(`polls/${pollId}`).update(updates);
             } catch (error) {
                 console.error('Update failed:', error);
-                // Fallback
                 const idx = polls.findIndex(p => p.id === pollId);
                 if (idx !== -1) {
                     polls[idx] = { ...polls[idx], ...updates };
@@ -1240,6 +1648,51 @@
                 polls = polls.filter(p => p.id !== pollId);
                 localStorage.setItem('polls', JSON.stringify(polls));
             }
+        }
+
+        async function deleteUser(userId) {
+            if (!isAdmin(currentUser)) return;
+            
+            if (!confirm('Удалить этого пользователя? Все его опросы также будут удалены.')) return;
+
+            // Delete user's polls
+            const userPolls = polls.filter(p => p.authorId === userId);
+            for (const poll of userPolls) {
+                await deletePollFromFirebase(poll.id);
+            }
+
+            // Delete user
+            users = users.filter(u => u.id !== userId);
+            localStorage.setItem('users', JSON.stringify(users));
+
+            if (firebaseInitialized && usersRef) {
+                try {
+                    await usersRef.child(userId).remove();
+                } catch (error) {
+                    console.error('Failed to delete user from Firebase:', error);
+                }
+            }
+
+            renderUsersList();
+            updateAdminStats();
+            showToast('Пользователь удалён', 'success');
+        }
+
+        function toggleAdminRole(userId) {
+            if (!isAdmin(currentUser)) return;
+            
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+
+            user.isAdmin = !user.isAdmin;
+            localStorage.setItem('users', JSON.stringify(users));
+
+            if (firebaseInitialized && usersRef) {
+                usersRef.child(userId).update({ isAdmin: user.isAdmin });
+            }
+
+            renderUsersList();
+            showToast(`Права администратора ${user.isAdmin ? 'выданы' : 'отозваны'}`, 'success');
         }
 
         function updateSyncStatus(status) {
@@ -1266,6 +1719,7 @@
         function init() {
             if (currentUser) {
                 showApp();
+                updateAdminUI();
                 initFirebaseListeners();
             } else {
                 showAuth();
@@ -1353,6 +1807,7 @@
             currentUser = user;
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             showApp();
+            updateAdminUI();
             initFirebaseListeners();
             showToast('Добро пожаловать, ' + username + '!', 'success');
         });
@@ -1388,22 +1843,30 @@
             }
             
             // Create user
+            const isUserAdmin = ADMIN_USERNAMES.includes(username.toLowerCase());
             const newUser = {
                 id: Date.now().toString(),
                 username: username,
                 password: password,
+                isAdmin: isUserAdmin,
                 createdAt: new Date().toISOString()
             };
             
             users.push(newUser);
             localStorage.setItem('users', JSON.stringify(users));
+
+            // Save to Firebase if available
+            if (firebaseInitialized && usersRef) {
+                usersRef.child(newUser.id).set(newUser);
+            }
             
             currentUser = newUser;
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             
             showApp();
+            updateAdminUI();
             initFirebaseListeners();
-            showToast('Аккаунт создан успешно!', 'success');
+            showToast('Аккаунт создан успешно!' + (isUserAdmin ? ' Права администратора выданы.' : ''), 'success');
         });
 
         function logout() {
@@ -1411,6 +1874,9 @@
             localStorage.removeItem('currentUser');
             if (pollsRef) {
                 pollsRef.off();
+            }
+            if (usersRef) {
+                usersRef.off();
             }
             showAuth();
             showLogin();
@@ -1426,10 +1892,20 @@
             if (tab === 'create') {
                 document.getElementById('tab-create').classList.add('active');
                 document.getElementById('create-view').classList.add('active');
-            } else {
+            } else if (tab === 'polls') {
                 document.getElementById('tab-polls').classList.add('active');
                 document.getElementById('polls-view').classList.add('active');
                 renderPolls();
+            } else if (tab === 'admin') {
+                if (!isAdmin(currentUser)) {
+                    showToast('Доступ запрещён', 'error');
+                    return;
+                }
+                document.getElementById('tab-admin').classList.add('active');
+                document.getElementById('admin-view').classList.add('active');
+                updateAdminStats();
+                renderUsersList();
+                renderAdminPolls();
             }
         }
 
@@ -1535,24 +2011,26 @@
             container.innerHTML = polls.map(poll => {
                 const hasVoted = votes[poll.id] !== undefined;
                 const isOwner = currentUser && poll.authorId === currentUser.id;
+                const isUserAdmin = isAdmin(currentUser);
                 const userVoteIndex = votes[poll.id];
                 const maxVotes = Math.max(...poll.options.map(o => o.votes));
                 
                 const dateStr = poll.createdAt ? new Date(poll.createdAt).toLocaleDateString('ru-RU') : '';
                 
                 return `
-                    <div class="poll-card" data-id="${poll.id}">
-                        ${isOwner ? `<button class="delete-btn" onclick="deletePoll('${poll.id}')" title="Удалить мой опрос">×</button>` : ''}
+                    <div class="poll-card ${isUserAdmin ? 'admin-card' : ''}" data-id="${poll.id}">
+                        ${(isOwner || isUserAdmin) ? `<button class="delete-btn" onclick="deletePoll('${poll.id}')" title="${isUserAdmin && !isOwner ? 'Удалить (админ)' : 'Удалить мой опрос'}">×</button>` : ''}
                         
                         <div class="poll-header">
                             <div class="poll-title">${escapeHtml(poll.question)}</div>
                             <div class="poll-meta">
                                 <div class="poll-author">
-                                    <div class="author-avatar">${poll.authorName ? poll.authorName[0].toUpperCase() : '?'}</div>
+                                    <div class="author-avatar ${isAdmin(users.find(u => u.id === poll.authorId)) ? 'admin-avatar' : ''}">${poll.authorName ? poll.authorName[0].toUpperCase() : '?'}</div>
                                     <span>${escapeHtml(poll.authorName || 'Unknown')}</span>
                                 </div>
                                 <span class="poll-date">${dateStr}</span>
                                 ${isOwner ? '<span class="poll-status status-owner">Мой</span>' : ''}
+                                ${isUserAdmin && !isOwner ? '<span class="poll-status status-admin">Админ</span>' : ''}
                                 ${hasVoted && !isOwner ? '<span class="poll-status status-voted">Проголосовано</span>' : ''}
                                 ${!hasVoted && !isOwner ? '<span class="poll-status status-active">Активен</span>' : ''}
                             </div>
@@ -1642,12 +2120,21 @@
 
         async function deletePoll(id) {
             const poll = polls.find(p => p.id === id);
-            if (!poll || poll.authorId !== currentUser?.id) {
+            if (!poll) return;
+            
+            const isOwner = currentUser && poll.authorId === currentUser.id;
+            const isUserAdmin = isAdmin(currentUser);
+            
+            if (!isOwner && !isUserAdmin) {
                 showToast('Нет прав для удаления', 'error');
                 return;
             }
             
-            if (!confirm('Удалить этот опрос? Это действие нельзя отменить.')) return;
+            const confirmMsg = isUserAdmin && !isOwner 
+                ? 'Вы администратор. Удалить чужой опрос?' 
+                : 'Удалить этот опрос? Это действие нельзя отменить.';
+            
+            if (!confirm(confirmMsg)) return;
             
             await deletePollFromFirebase(id);
             delete votes[id];
@@ -1657,6 +2144,268 @@
             showToast('Опрос удалён', 'success');
         }
 
+        // ==================== ADMIN PANEL FUNCTIONS ====================
+        
+        function updateAdminStats() {
+            const totalPolls = polls.length;
+            const totalVotes = polls.reduce((sum, p) => sum + (p.totalVotes || 0), 0);
+            const totalUsers = users.length;
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayPolls = polls.filter(p => {
+                const pollDate = new Date(p.createdAt);
+                return pollDate >= today;
+            }).length;
+
+            document.getElementById('stat-total-polls').textContent = totalPolls;
+            document.getElementById('stat-total-votes').textContent = totalVotes;
+            document.getElementById('stat-total-users').textContent = totalUsers;
+            document.getElementById('stat-today-polls').textContent = todayPolls;
+        }
+
+        function renderUsersList() {
+            const container = document.getElementById('users-list');
+            const searchTerm = document.getElementById('user-search')?.value.toLowerCase() || '';
+            const roleFilter = document.getElementById('user-filter-role')?.value || 'all';
+
+            let filteredUsers = users.filter(u => {
+                const matchesSearch = u.username.toLowerCase().includes(searchTerm);
+                const matchesRole = roleFilter === 'all' || 
+                    (roleFilter === 'admin' && u.isAdmin) || 
+                    (roleFilter === 'user' && !u.isAdmin);
+                return matchesSearch && matchesRole;
+            });
+
+            if (filteredUsers.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="padding: 2rem;"><p>Пользователи не найдены</p></div>';
+                return;
+            }
+
+            container.innerHTML = filteredUsers.map(user => `
+                <div class="user-item">
+                    <div class="user-item-info">
+                        <div class="user-item-avatar ${user.isAdmin ? 'admin' : ''}">${user.username[0].toUpperCase()}</div>
+                        <div class="user-item-details">
+                            <h4>${escapeHtml(user.username)} ${user.isAdmin ? '<span style="color: var(--admin); font-size: 0.8rem;">(ADMIN)</span>' : ''}</h4>
+                            <span>ID: ${user.id} • Создан: ${new Date(user.createdAt).toLocaleDateString('ru-RU')}</span>
+                        </div>
+                    </div>
+                    <div class="user-item-actions">
+                        ${user.id !== currentUser.id ? `
+                            <button class="btn btn-secondary btn-small" onclick="toggleAdminRole('${user.id}')">
+                                ${user.isAdmin ? '❌ Забрать админ' : '✓ Сделать админом'}
+                            </button>
+                            <button class="btn btn-danger btn-small" onclick="deleteUser('${user.id}')">
+                                Удалить
+                            </button>
+                        ` : '<span style="color: var(--text-muted); font-size: 0.85rem;">Это вы</span>'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterUsers() {
+            renderUsersList();
+        }
+
+        function renderAdminPolls() {
+            const container = document.getElementById('admin-polls-container');
+            const searchTerm = document.getElementById('poll-search')?.value.toLowerCase() || '';
+            const timeFilter = document.getElementById('poll-filter')?.value || 'all';
+
+            let filteredPolls = polls.filter(p => {
+                const matchesSearch = p.question.toLowerCase().includes(searchTerm) || 
+                    p.authorName.toLowerCase().includes(searchTerm);
+                
+                let matchesTime = true;
+                const pollDate = new Date(p.createdAt);
+                const now = new Date();
+                
+                if (timeFilter === 'recent') {
+                    const dayAgo = new Date(now - 24 * 60 * 60 * 1000);
+                    matchesTime = pollDate >= dayAgo;
+                } else if (timeFilter === 'week') {
+                    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+                    matchesTime = pollDate >= weekAgo;
+                } else if (timeFilter === 'month') {
+                    const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+                    matchesTime = pollDate >= monthAgo;
+                }
+                
+                return matchesSearch && matchesTime;
+            });
+
+            if (filteredPolls.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>Опросы не найдены</p></div>';
+                return;
+            }
+
+            container.innerHTML = filteredPolls.map(poll => {
+                const maxVotes = Math.max(...poll.options.map(o => o.votes));
+                const author = users.find(u => u.id === poll.authorId);
+                
+                return `
+                    <div class="poll-card admin-card" data-id="${poll.id}">
+                        <button class="delete-btn" onclick="deletePoll('${poll.id}')" title="Удалить опрос">×</button>
+                        
+                        <div class="poll-header">
+                            <div class="poll-title">${escapeHtml(poll.question)}</div>
+                            <div class="poll-meta">
+                                <div class="poll-author">
+                                    <div class="author-avatar ${author?.isAdmin ? 'admin-avatar' : ''}">${poll.authorName ? poll.authorName[0].toUpperCase() : '?'}</div>
+                                    <span>${escapeHtml(poll.authorName || 'Unknown')}</span>
+                                </div>
+                                <span class="poll-date">${new Date(poll.createdAt).toLocaleDateString('ru-RU')}</span>
+                                <span class="poll-status status-admin">ID: ${poll.id.slice(-6)}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="options-list">
+                            ${poll.options.map((option, idx) => {
+                                const percentage = poll.totalVotes > 0 
+                                    ? Math.round((option.votes / poll.totalVotes) * 100) 
+                                    : 0;
+                                const isWinner = option.votes === maxVotes && option.votes > 0;
+                                
+                                return `
+                                    <div class="option-item disabled">
+                                        <div class="option-progress" style="width: ${percentage}%"></div>
+                                        <div class="option-content">
+                                            <span class="option-text">
+                                                ${escapeHtml(option.text)}
+                                                ${isWinner ? ' 👑' : ''}
+                                            </span>
+                                            <div class="option-stats">
+                                                <span class="vote-count">${option.votes}</span>
+                                                <span class="percentage">${percentage}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        
+                        <div class="total-votes">
+                            Всего голосов: <strong>${poll.totalVotes}</strong>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearAllData() {
+            if (!isAdmin(currentUser)) return;
+            
+            if (!confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ опросы, голоса и пользователей (кроме вас). Продолжить?')) return;
+            if (!confirm('Вы уверены? Это действие необратимо!')) return;
+
+            // Clear all polls
+            polls = [];
+            votes = {};
+            
+            // Clear other users (keep current admin)
+            users = users.filter(u => u.id === currentUser.id);
+            
+            localStorage.setItem('polls', JSON.stringify(polls));
+            localStorage.setItem('votes', JSON.stringify(votes));
+            localStorage.setItem('users', JSON.stringify(users));
+
+            if (firebaseInitialized && pollsRef) {
+                pollsRef.remove();
+            }
+            if (firebaseInitialized && usersRef) {
+                // Remove all users except current from Firebase
+                users.forEach(u => {
+                    if (u.id !== currentUser.id) {
+                        usersRef.child(u.id).remove();
+                    }
+                });
+            }
+
+            updateAdminStats();
+            renderUsersList();
+            renderAdminPolls();
+            showToast('Все данные очищены', 'admin');
+        }
+
+        function exportData() {
+            if (!isAdmin(currentUser)) return;
+
+            const data = {
+                polls: polls,
+                users: users.map(u => ({ ...u, password: '[REDACTED]' })),
+                votes: votes,
+                exportDate: new Date().toISOString(),
+                exportedBy: currentUser.username
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pollcraft_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showToast('Данные экспортированы', 'success');
+        }
+
+        function importData() {
+            if (!isAdmin(currentUser)) return;
+            document.getElementById('import-file').click();
+        }
+
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (!confirm(`Импортировать ${data.polls?.length || 0} опросов и ${data.users?.length || 0} пользователей?`)) return;
+
+                    // Import polls
+                    if (data.polls && Array.isArray(data.polls)) {
+                        for (const poll of data.polls) {
+                            await savePoll(poll);
+                        }
+                    }
+
+                    // Import users (merge)
+                    if (data.users && Array.isArray(data.users)) {
+                        for (const user of data.users) {
+                            if (!users.find(u => u.id === user.id)) {
+                                users.push({ ...user, password: user.password === '[REDACTED]' ? 'imported_' + Math.random().toString(36).slice(2) : user.password });
+                            }
+                        }
+                        localStorage.setItem('users', JSON.stringify(users));
+                    }
+
+                    // Import votes
+                    if (data.votes) {
+                        Object.assign(votes, data.votes);
+                        localStorage.setItem('votes', JSON.stringify(votes));
+                    }
+
+                    updateAdminStats();
+                    renderUsersList();
+                    renderAdminPolls();
+                    showToast('Данные импортированы успешно', 'success');
+                } catch (error) {
+                    showToast('Ошибка импорта: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ==================== UTILITY FUNCTIONS ====================
+        
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
@@ -1666,7 +2415,10 @@
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             toast.className = `toast ${type}`;
-            toast.querySelector('.toast-icon').textContent = type === 'success' ? '✓' : '✕';
+            toast.querySelector('.toast-icon').textContent = 
+                type === 'success' ? '✓' : 
+                type === 'error' ? '✕' : 
+                type === 'admin' ? '⚡' : 'ℹ';
             toast.querySelector('.toast-message').textContent = message;
             
             toast.classList.add('show');
