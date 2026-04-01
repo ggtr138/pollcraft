@@ -5,20 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PollCraft | Интерактивные опросы</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         :root {
             --primary: #00d4ff;
             --secondary: #ff6b35;
+            --admin: #ff00ff;
             --bg: #0a0e27;
             --surface: rgba(255, 255, 255, 0.03);
             --surface-hover: rgba(255, 255, 255, 0.06);
@@ -28,8 +25,9 @@
             --success: #00ff88;
             --error: #ff3366;
             --warning: #ffb800;
-            --admin: #ff00ff;
         }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Space Grotesk', sans-serif;
@@ -44,10 +42,8 @@
 
         .bg-mesh {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: -1;
             opacity: 0.4;
         }
@@ -55,8 +51,7 @@
         .bg-mesh::before {
             content: '';
             position: absolute;
-            width: 200%;
-            height: 200%;
+            width: 200%; height: 200%;
             background: 
                 repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(0, 212, 255, 0.03) 35px, rgba(0, 212, 255, 0.03) 70px),
                 repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(255, 107, 53, 0.03) 35px, rgba(255, 107, 53, 0.03) 70px);
@@ -68,7 +63,26 @@
             100% { transform: translate(-50%, -50%); }
         }
 
-        /* Auth Styles */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        @keyframes adminPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 0, 255, 0.4); }
+            50% { box-shadow: 0 0 20px 5px rgba(255, 0, 255, 0.2); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Auth */
         .auth-container {
             min-height: 100vh;
             display: flex;
@@ -92,10 +106,8 @@
         .auth-box::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
+            top: 0; left: 0;
+            width: 100%; height: 4px;
             background: linear-gradient(90deg, var(--primary), var(--secondary));
         }
 
@@ -123,11 +135,6 @@
             animation: pulse 2s ease-in-out infinite;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.1); }
-        }
-
         .auth-subtitle {
             color: var(--text-muted);
             font-size: 1rem;
@@ -147,7 +154,7 @@
             letter-spacing: 1px;
         }
 
-        input[type="text"], input[type="password"], input[type="email"] {
+        input[type="text"], input[type="password"], select {
             width: 100%;
             padding: 1rem 1.2rem;
             background: rgba(255, 255, 255, 0.05);
@@ -159,7 +166,7 @@
             transition: all 0.3s;
         }
 
-        input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
@@ -183,9 +190,7 @@
             display: none;
         }
 
-        .password-strength.show {
-            display: block;
-        }
+        .password-strength.show { display: block; }
 
         .strength-bar {
             height: 100%;
@@ -198,6 +203,7 @@
         .strength-medium { background: var(--warning); width: 66%; }
         .strength-strong { background: var(--success); width: 100%; }
 
+        /* Buttons */
         .btn {
             padding: 1rem 2rem;
             border: none;
@@ -281,6 +287,12 @@
             border-radius: 50%;
         }
 
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            width: auto;
+        }
+
         .auth-switch {
             text-align: center;
             margin-top: 1.5rem;
@@ -295,9 +307,7 @@
             cursor: pointer;
         }
 
-        .auth-switch a:hover {
-            text-decoration: underline;
-        }
+        .auth-switch a:hover { text-decoration: underline; }
 
         .error-message {
             background: rgba(255, 51, 102, 0.1);
@@ -312,18 +322,11 @@
             gap: 0.5rem;
         }
 
-        .error-message.show {
-            display: flex;
-        }
+        .error-message.show { display: flex; }
 
-        /* Main App Layout */
-        .app-container {
-            display: none;
-        }
-
-        .app-container.show {
-            display: block;
-        }
+        /* App Layout */
+        .app-container { display: none; }
+        .app-container.show { display: block; }
 
         header {
             padding: 1.5rem 4%;
@@ -443,11 +446,6 @@
             animation: adminPulse 2s ease-in-out infinite;
         }
 
-        @keyframes adminPulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 0, 255, 0.4); }
-            50% { box-shadow: 0 0 20px 5px rgba(255, 0, 255, 0.2); }
-        }
-
         .user-name {
             font-weight: 600;
             font-size: 0.9rem;
@@ -493,16 +491,9 @@
             animation: fadeIn 0.5s ease;
         }
 
-        .view.active {
-            display: block;
-        }
+        .view.active { display: block; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Create Poll Section */
+        /* Create Poll */
         .create-container {
             max-width: 700px;
             margin: 0 auto;
@@ -560,12 +551,7 @@
             display: flex;
             gap: 1rem;
             align-items: center;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
+            animation: fadeIn 0.3s ease;
         }
 
         .option-number {
@@ -603,10 +589,8 @@
         .poll-card::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
+            top: 0; left: 0;
+            width: 100%; height: 4px;
             background: linear-gradient(90deg, var(--primary), var(--secondary));
             transform: scaleX(0);
             transition: transform 0.3s;
@@ -618,9 +602,7 @@
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
 
-        .poll-card:hover::before {
-            transform: scaleX(1);
-        }
+        .poll-card:hover::before { transform: scaleX(1); }
 
         .poll-card.admin-card {
             border-color: rgba(255, 0, 255, 0.3);
@@ -630,9 +612,7 @@
             background: linear-gradient(90deg, var(--admin), #9900ff);
         }
 
-        .poll-header {
-            margin-bottom: 1.5rem;
-        }
+        .poll-header { margin-bottom: 1.5rem; }
 
         .poll-title {
             font-family: 'Syne', sans-serif;
@@ -735,9 +715,7 @@
             transform: translateX(5px);
         }
 
-        .option-item.disabled {
-            cursor: default;
-        }
+        .option-item.disabled { cursor: default; }
 
         .option-item.selected {
             border-color: var(--success);
@@ -746,8 +724,7 @@
 
         .option-progress {
             position: absolute;
-            left: 0;
-            top: 0;
+            left: 0; top: 0;
             height: 100%;
             background: linear-gradient(90deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.05));
             transition: width 0.5s ease;
@@ -848,7 +825,7 @@
             font-family: 'Syne', sans-serif;
         }
 
-        /* Admin Panel Styles */
+        /* Admin Panel */
         .admin-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -869,10 +846,8 @@
         .stat-card::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
             background: linear-gradient(90deg, var(--admin), #9900ff);
         }
 
@@ -985,12 +960,6 @@
             gap: 0.5rem;
         }
 
-        .btn-small {
-            padding: 0.5rem 1rem;
-            font-size: 0.8rem;
-            width: auto;
-        }
-
         .admin-filter {
             display: flex;
             gap: 1rem;
@@ -1001,21 +970,6 @@
         .admin-filter input {
             flex: 1;
             min-width: 200px;
-        }
-
-        .admin-filter select {
-            padding: 0.8rem 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border);
-            color: var(--text);
-            border-radius: 12px;
-            font-family: inherit;
-            cursor: pointer;
-        }
-
-        .admin-filter select:focus {
-            outline: none;
-            border-color: var(--admin);
         }
 
         .danger-zone {
@@ -1047,14 +1001,9 @@
             max-width: 350px;
         }
 
-        .toast.show {
-            transform: translateX(0);
-        }
+        .toast.show { transform: translateX(0); }
 
-        .toast-icon {
-            font-size: 1.3rem;
-            flex-shrink: 0;
-        }
+        .toast-icon { font-size: 1.3rem; flex-shrink: 0; }
 
         .toast.success { border-color: rgba(0, 255, 136, 0.3); }
         .toast.success .toast-icon { color: var(--success); }
@@ -1066,8 +1015,7 @@
         /* Confetti */
         #confetti {
             position: fixed;
-            top: 0;
-            left: 0;
+            top: 0; left: 0;
             pointer-events: none;
             z-index: 999;
         }
@@ -1075,10 +1023,8 @@
         /* Loading */
         .loading-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: var(--bg);
             display: none;
             align-items: center;
@@ -1086,9 +1032,7 @@
             z-index: 9999;
         }
 
-        .loading-overlay.show {
-            display: flex;
-        }
+        .loading-overlay.show { display: flex; }
 
         .spinner {
             width: 50px;
@@ -1099,10 +1043,9 @@
             animation: spin 1s linear infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        .hidden { display: none !important; }
 
+        /* Responsive */
         @media (max-width: 768px) {
             header {
                 flex-direction: column;
@@ -1127,21 +1070,13 @@
                 justify-content: center;
             }
 
-            .section-title {
-                font-size: 1.8rem;
-            }
+            .section-title { font-size: 1.8rem; }
 
-            .polls-grid {
-                grid-template-columns: 1fr;
-            }
+            .polls-grid { grid-template-columns: 1fr; }
 
-            .auth-box {
-                padding: 2rem 1.5rem;
-            }
+            .auth-box { padding: 2rem 1.5rem; }
 
-            .admin-stats {
-                grid-template-columns: 1fr;
-            }
+            .admin-stats { grid-template-columns: 1fr; }
 
             .user-item {
                 flex-direction: column;
@@ -1152,97 +1087,61 @@
             .user-item-actions {
                 width: 100%;
                 justify-content: center;
-                        }
-
-        .hidden {
-            display: none !important;
+            }
         }
     </style>
 </head>
 <body>
     <div class="bg-mesh"></div>
     <canvas id="confetti"></canvas>
-    <div class="loading-overlay" id="loading">
-        <div class="spinner"></div>
-    </div>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
-    <!-- Auth Container -->
+    <!-- Auth -->
     <div class="auth-container" id="auth-container">
-        <!-- Login Form -->
         <div class="auth-box" id="login-form">
             <div class="auth-header">
                 <div class="auth-logo">PollCraft</div>
                 <p class="auth-subtitle">Войдите для доступа к опросам</p>
             </div>
-            
-            <div class="error-message" id="login-error">
-                <span>⚠️</span>
-                <span></span>
-            </div>
-
+            <div class="error-message" id="login-error"><span>⚠️</span><span></span></div>
             <form id="login-form-element">
                 <div class="form-group">
                     <label>Имя пользователя</label>
                     <input type="text" id="login-username" placeholder="Введите имя пользователя" required autocomplete="username">
                 </div>
-                
                 <div class="form-group">
                     <label>Пароль</label>
                     <input type="password" id="login-password" placeholder="Введите пароль" required autocomplete="current-password">
                 </div>
-
-                <button type="submit" class="btn btn-primary">
-                    <span>→</span> Войти
-                </button>
+                <button type="submit" class="btn btn-primary"><span>→</span> Войти</button>
             </form>
-
-            <div class="auth-switch">
-                Нет аккаунта? <a onclick="showRegister()">Создать аккаунт</a>
-            </div>
+            <div class="auth-switch">Нет аккаунта? <a onclick="showRegister()">Создать аккаунт</a></div>
         </div>
 
-        <!-- Register Form -->
         <div class="auth-box hidden" id="register-form">
             <div class="auth-header">
                 <div class="auth-logo">PollCraft</div>
                 <p class="auth-subtitle">Создайте новый аккаунт</p>
             </div>
-
-            <div class="error-message" id="register-error">
-                <span>⚠️</span>
-                <span></span>
-            </div>
-
+            <div class="error-message" id="register-error"><span>⚠️</span><span></span></div>
             <form id="register-form-element">
                 <div class="form-group">
                     <label>Имя пользователя</label>
                     <input type="text" id="reg-username" placeholder="Придумайте имя (3-20 символов)" required autocomplete="username">
-                    <div class="input-hint">
-                        <span>💡</span> Только буквы, цифры и подчеркивание
-                    </div>
+                    <div class="input-hint"><span>💡</span> Только буквы, цифры и подчеркивание</div>
                 </div>
-
                 <div class="form-group">
                     <label>Пароль</label>
                     <input type="password" id="reg-password" placeholder="Минимум 6 символов" required autocomplete="new-password">
-                    <div class="password-strength" id="strength-bar">
-                        <div class="strength-bar"></div>
-                    </div>
+                    <div class="password-strength" id="strength-bar"><div class="strength-bar"></div></div>
                 </div>
-
                 <div class="form-group">
                     <label>Подтвердите пароль</label>
                     <input type="password" id="reg-confirm" placeholder="Повторите пароль" required autocomplete="new-password">
                 </div>
-
-                <button type="submit" class="btn btn-primary" id="reg-submit">
-                    <span>✓</span> Создать аккаунт
-                </button>
+                <button type="submit" class="btn btn-primary" id="reg-submit"><span>✓</span> Создать аккаунт</button>
             </form>
-
-            <div class="auth-switch">
-                Уже есть аккаунт? <a onclick="showLogin()">Войти</a>
-            </div>
+            <div class="auth-switch">Уже есть аккаунт? <a onclick="showLogin()">Войти</a></div>
         </div>
     </div>
 
@@ -1257,7 +1156,6 @@
                     <button class="tab admin-tab hidden" onclick="switchTab('admin')" id="tab-admin">Админ</button>
                 </nav>
             </div>
-            
             <div class="user-menu">
                 <div class="user-info">
                     <div class="user-avatar" id="header-avatar">U</div>
@@ -1269,22 +1167,17 @@
         </header>
 
         <main>
-            <!-- Create View -->
+            <!-- Create -->
             <div id="create-view" class="view active">
                 <div class="create-container">
                     <h1 class="section-title">Создайте опрос</h1>
                     <p class="section-subtitle">Задайте вопрос и добавьте варианты ответов</p>
-                    
-                    <div class="sync-status synced" id="sync-status">
-                        <span>☁️</span> Онлайн режим — данные синхронизируются автоматически
-                    </div>
-
+                    <div class="sync-status synced" id="sync-status"><span>☁️</span> Онлайн режим — данные синхронизируются автоматически</div>
                     <form id="poll-form">
                         <div class="form-group">
                             <label>Вопрос</label>
                             <input type="text" id="question-input" placeholder="Например: Какой ваш любимый язык программирования?" required>
                         </div>
-
                         <div class="form-group">
                             <label>Варианты ответов</label>
                             <div class="options-container" id="options-container">
@@ -1297,36 +1190,27 @@
                                     <input type="text" class="option-input" placeholder="Вариант 2" required>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-outline" onclick="addOption()">
-                                <span>+</span> Добавить вариант
-                            </button>
+                            <button type="button" class="btn btn-outline" onclick="addOption()"><span>+</span> Добавить вариант</button>
                         </div>
-
-                        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
-                            <span>🚀</span> Опубликовать опрос
-                        </button>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;"><span>🚀</span> Опубликовать опрос</button>
                     </form>
                 </div>
             </div>
 
-            <!-- Polls View -->
+            <!-- Polls -->
             <div id="polls-view" class="view">
                 <h1 class="section-title">Все опросы</h1>
                 <p class="section-subtitle" id="polls-subtitle">Голосуйте и смотрите результаты в реальном времени</p>
-                
-                <div id="polls-container" class="polls-grid">
-                    <!-- Polls rendered here -->
-                </div>
+                <div id="polls-container" class="polls-grid"></div>
             </div>
 
-            <!-- Admin View -->
+            <!-- Admin -->
             <div id="admin-view" class="view">
                 <h1 class="section-title" style="background: linear-gradient(135deg, var(--admin), #9900ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                     Панель администратора
                 </h1>
                 <p class="section-subtitle">Управление системой, пользователями и опросами</p>
 
-                <!-- Statistics Cards -->
                 <div class="admin-stats">
                     <div class="stat-card">
                         <div class="stat-icon">📊</div>
@@ -1350,7 +1234,6 @@
                     </div>
                 </div>
 
-                <!-- Users Management -->
                 <div class="admin-section">
                     <h2 class="admin-section-title">Управление пользователями</h2>
                     <div class="admin-filter">
@@ -1361,12 +1244,9 @@
                             <option value="user">Пользователи</option>
                         </select>
                     </div>
-                    <div class="users-list" id="users-list">
-                        <!-- Users rendered here -->
-                    </div>
+                    <div class="users-list" id="users-list"></div>
                 </div>
 
-                <!-- All Polls Management -->
                 <div class="admin-section">
                     <h2 class="admin-section-title">Все опросы в системе</h2>
                     <div class="admin-filter">
@@ -1378,24 +1258,15 @@
                             <option value="month">Последний месяц</option>
                         </select>
                     </div>
-                    <div id="admin-polls-container" class="polls-grid">
-                        <!-- Admin polls rendered here -->
-                    </div>
+                    <div id="admin-polls-container" class="polls-grid"></div>
                 </div>
 
-                <!-- System Actions -->
                 <div class="admin-section danger-zone">
                     <h2 class="admin-section-title">Опасная зона</h2>
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                        <button class="btn btn-danger" onclick="clearAllData()">
-                            <span>🗑️</span> Очистить все данные
-                        </button>
-                        <button class="btn btn-danger" onclick="exportData()">
-                            <span>💾</span> Экспорт данных (JSON)
-                        </button>
-                        <button class="btn btn-secondary" onclick="importData()">
-                            <span>📥</span> Импорт данных
-                        </button>
+                        <button class="btn btn-danger" onclick="clearAllData()"><span>🗑️</span> Очистить все данные</button>
+                        <button class="btn btn-danger" onclick="exportData()"><span>💾</span> Экспорт данных (JSON)</button>
+                        <button class="btn btn-secondary" onclick="importData()"><span>📥</span> Импорт данных</button>
                     </div>
                 </div>
             </div>
@@ -1410,7 +1281,7 @@
     <input type="file" id="import-file" style="display: none;" accept=".json" onchange="handleImport(event)">
 
     <script>
-        // ==================== FIREBASE CONFIGURATION ====================
+        // ==================== FIREBASE CONFIG (СОХРАНЁН ИЗ ОРИГИНАЛА) ====================
         const firebaseConfig = {
             apiKey: "AIzaSyD4TwVz9q35yB_ahYbQeJiQW7usRXbPaTc",
             authDomain: "pollcraft1.firebaseapp.com",
@@ -1421,22 +1292,12 @@
             appId: "1:717690218593:web:a6ba225afed82d12f16220"
         };
 
-        // Инициализация Firebase
+        // Admin usernames
+        const ADMIN_USERNAMES = ['admin', 'administrator', 'root', 'moderator'];
+
+        // ==================== STATE ====================
         let app, database, auth;
         let firebaseInitialized = false;
-
-        try {
-            app = firebase.initializeApp(firebaseConfig);
-            database = firebase.database();
-            auth = firebase.auth();
-            firebaseInitialized = true;
-            console.log('Firebase initialized successfully');
-        } catch (error) {
-            console.error('Firebase initialization failed:', error);
-            firebaseInitialized = false;
-        }
-
-        // ==================== STATE MANAGEMENT ====================
         let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
         let users = JSON.parse(localStorage.getItem('users')) || [];
         let polls = [];
@@ -1444,8 +1305,17 @@
         let pollsRef = null;
         let usersRef = null;
 
-        // Admin usernames (hardcoded for demo - in production use proper role system)
-        const ADMIN_USERNAMES = ['admin', 'administrator', 'root', 'moderator'];
+        // Initialize Firebase
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            auth = firebase.auth();
+            firebaseInitialized = true;
+            console.log('✅ Firebase подключен');
+        } catch (error) {
+            console.error('❌ Firebase ошибка:', error);
+            firebaseInitialized = false;
+        }
 
         // ==================== CONFETTI ====================
         const confettiCanvas = document.getElementById('confetti');
@@ -1456,8 +1326,8 @@
             confettiCanvas.width = window.innerWidth;
             confettiCanvas.height = window.innerHeight;
         }
-        resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
         function createConfetti(x, y) {
             const colors = ['#00d4ff', '#ff6b35', '#00ff88', '#ff3366', '#ffffff', '#ff00ff'];
@@ -1494,7 +1364,7 @@
         }
         updateConfetti();
 
-        // ==================== ADMIN CHECK ====================
+        // ==================== ADMIN UTILITIES ====================
         function isAdmin(user) {
             if (!user) return false;
             return user.isAdmin === true || ADMIN_USERNAMES.includes(user.username.toLowerCase());
@@ -1511,16 +1381,14 @@
                 adminBadge.classList.remove('hidden');
                 headerAvatar.classList.add('admin');
                 
-                // Ensure current user has admin flag
                 if (!currentUser.isAdmin) {
                     currentUser.isAdmin = true;
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    
-                    // Update in users array
-                    const userIdx = users.findIndex(u => u.id === currentUser.id);
-                    if (userIdx !== -1) {
-                        users[userIdx].isAdmin = true;
+                    const idx = users.findIndex(u => u.id === currentUser.id);
+                    if (idx !== -1) {
+                        users[idx].isAdmin = true;
                         localStorage.setItem('users', JSON.stringify(users));
+                        if (firebaseInitialized) database.ref(`users/${currentUser.id}`).update({ isAdmin: true });
                     }
                 }
             } else {
@@ -1531,7 +1399,6 @@
         }
 
         // ==================== FIREBASE FUNCTIONS ====================
-        
         function initFirebaseListeners() {
             if (!firebaseInitialized) {
                 polls = JSON.parse(localStorage.getItem('polls')) || [];
@@ -1540,9 +1407,7 @@
             }
 
             pollsRef = database.ref('polls');
-            usersRef = database.ref('users');
             
-            // Слушаем изменения опросов
             pollsRef.on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
@@ -1556,37 +1421,31 @@
                 renderPolls();
                 updateAdminStats();
                 updateSyncStatus('synced');
-            }, (error) => {
-                console.error('Firebase read failed:', error);
+            }, () => {
                 updateSyncStatus('offline');
                 polls = JSON.parse(localStorage.getItem('polls')) || [];
                 renderPolls();
             });
 
-            // Слушаем изменения пользователей если админ
-            if (isAdmin(currentUser) && usersRef) {
-                usersRef.on('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        const firebaseUsers = Object.keys(data).map(key => ({
-                            id: key,
-                            ...data[key]
-                        }));
-                        // Merge with local users
-                        firebaseUsers.forEach(fbUser => {
-                            const idx = users.findIndex(u => u.id === fbUser.id);
-                            if (idx === -1) {
-                                users.push(fbUser);
-                            } else {
-                                users[idx] = fbUser;
-                            }
-                        });
-                        localStorage.setItem('users', JSON.stringify(users));
+            // Загрузка пользователей из Firebase
+            usersRef = database.ref('users');
+            usersRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const firebaseUsers = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                    // Слияние с локальными пользователями
+                    firebaseUsers.forEach(fbUser => {
+                        const idx = users.findIndex(u => u.id === fbUser.id);
+                        if (idx === -1) users.push(fbUser);
+                        else users[idx] = { ...users[idx], ...fbUser };
+                    });
+                    localStorage.setItem('users', JSON.stringify(users));
+                    if (isAdmin(currentUser)) {
                         renderUsersList();
                         updateAdminStats();
                     }
-                });
-            }
+                }
+            });
         }
 
         async function savePoll(poll) {
@@ -1605,7 +1464,6 @@
                 });
                 return true;
             } catch (error) {
-                console.error('Save failed:', error);
                 polls.unshift(poll);
                 localStorage.setItem('polls', JSON.stringify(polls));
                 return false;
@@ -1625,7 +1483,6 @@
             try {
                 await database.ref(`polls/${pollId}`).update(updates);
             } catch (error) {
-                console.error('Update failed:', error);
                 const idx = polls.findIndex(p => p.id === pollId);
                 if (idx !== -1) {
                     polls[idx] = { ...polls[idx], ...updates };
@@ -1644,7 +1501,6 @@
             try {
                 await database.ref(`polls/${pollId}`).remove();
             } catch (error) {
-                console.error('Delete failed:', error);
                 polls = polls.filter(p => p.id !== pollId);
                 localStorage.setItem('polls', JSON.stringify(polls));
             }
@@ -1652,25 +1508,18 @@
 
         async function deleteUser(userId) {
             if (!isAdmin(currentUser)) return;
-            
-            if (!confirm('Удалить этого пользователя? Все его опросы также будут удалены.')) return;
+            if (!confirm('Удалить пользователя? Все его опросы также будут удалены.')) return;
 
-            // Delete user's polls
             const userPolls = polls.filter(p => p.authorId === userId);
             for (const poll of userPolls) {
                 await deletePollFromFirebase(poll.id);
             }
 
-            // Delete user
             users = users.filter(u => u.id !== userId);
             localStorage.setItem('users', JSON.stringify(users));
 
             if (firebaseInitialized && usersRef) {
-                try {
-                    await usersRef.child(userId).remove();
-                } catch (error) {
-                    console.error('Failed to delete user from Firebase:', error);
-                }
+                try { await usersRef.child(userId).remove(); } catch (e) {}
             }
 
             renderUsersList();
@@ -1680,9 +1529,8 @@
 
         function toggleAdminRole(userId) {
             if (!isAdmin(currentUser)) return;
-            
             const user = users.find(u => u.id === userId);
-            if (!user) return;
+            if (!user || user.id === currentUser.id) return;
 
             user.isAdmin = !user.isAdmin;
             localStorage.setItem('users', JSON.stringify(users));
@@ -1692,7 +1540,7 @@
             }
 
             renderUsersList();
-            showToast(`Права администратора ${user.isAdmin ? 'выданы' : 'отозваны'}`, 'success');
+            showToast(`Права админа ${user.isAdmin ? 'выданы' : 'отозваны'}`, 'success');
         }
 
         function updateSyncStatus(status) {
@@ -1709,10 +1557,6 @@
             } else if (status === 'offline') {
                 el.innerHTML = '<span>⚠️</span> Оффлайн режим';
             }
-        }
-
-        function showLoading(show) {
-            document.getElementById('loading').classList.toggle('show', show);
         }
 
         // ==================== AUTH FUNCTIONS ====================
@@ -1767,7 +1611,7 @@
             }
         }
 
-        // Password strength indicator
+        // Password strength
         document.getElementById('reg-password')?.addEventListener('input', function(e) {
             const val = e.target.value;
             const bar = document.querySelector('.strength-bar');
@@ -1809,7 +1653,7 @@
             showApp();
             updateAdminUI();
             initFirebaseListeners();
-            showToast('Добро пожаловать, ' + username + '!', 'success');
+            showToast(`Добро пожаловать, ${username}!`, 'success');
         });
 
         // Register handler
@@ -1821,19 +1665,18 @@
             const password = document.getElementById('reg-password').value;
             const confirm = document.getElementById('reg-confirm').value;
             
-            // Validation
             if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
-                showError('register-error', 'Имя пользователя: 3-20 символов, только буквы, цифры и подчеркивание');
+                showError('register-error', 'Имя: 3-20 символов, буквы, цифры, подчеркивание');
                 return;
             }
             
             if (users.some(u => u.username === username)) {
-                showError('register-error', 'Это имя пользователя уже занято');
+                showError('register-error', 'Имя уже занято');
                 return;
             }
             
             if (password.length < 6) {
-                showError('register-error', 'Пароль должен быть минимум 6 символов');
+                showError('register-error', 'Пароль минимум 6 символов');
                 return;
             }
             
@@ -1842,7 +1685,6 @@
                 return;
             }
             
-            // Create user
             const isUserAdmin = ADMIN_USERNAMES.includes(username.toLowerCase());
             const newUser = {
                 id: Date.now().toString(),
@@ -1855,7 +1697,6 @@
             users.push(newUser);
             localStorage.setItem('users', JSON.stringify(users));
 
-            // Save to Firebase if available
             if (firebaseInitialized && usersRef) {
                 usersRef.child(newUser.id).set(newUser);
             }
@@ -1866,22 +1707,18 @@
             showApp();
             updateAdminUI();
             initFirebaseListeners();
-            showToast('Аккаунт создан успешно!' + (isUserAdmin ? ' Права администратора выданы.' : ''), 'success');
+            showToast('Аккаунт создан!' + (isUserAdmin ? ' Права админа выданы.' : ''), 'success');
         });
 
         function logout() {
             currentUser = null;
             localStorage.removeItem('currentUser');
-            if (pollsRef) {
-                pollsRef.off();
-            }
-            if (usersRef) {
-                usersRef.off();
-            }
+            if (pollsRef) pollsRef.off();
+            if (usersRef) usersRef.off();
             showAuth();
             showLogin();
             document.getElementById('login-form-element').reset();
-            showToast('Вы вышли из системы', 'success');
+            showToast('Вы вышли', 'success');
         }
 
         // ==================== APP FUNCTIONS ====================
@@ -1945,7 +1782,7 @@
             e.preventDefault();
             
             if (!currentUser) {
-                showToast('Необходимо авторизоваться', 'error');
+                showToast('Необходима авторизация', 'error');
                 return;
             }
             
@@ -1957,7 +1794,7 @@
             })).filter(opt => opt.text);
 
             if (options.length < 2) {
-                showToast('Добавьте минимум 2 варианта ответа', 'error');
+                showToast('Добавьте минимум 2 варианта', 'error');
                 return;
             }
 
@@ -1972,13 +1809,9 @@
                 totalVotes: 0
             };
 
-            const saved = await savePoll(poll);
+            await savePoll(poll);
+            showToast('Опрос опубликован!', 'success');
             
-            if (saved) {
-                showToast('Опрос опубликован!', 'success');
-            }
-            
-            // Reset form
             e.target.reset();
             document.getElementById('options-container').innerHTML = `
                 <div class="option-input-wrapper">
@@ -2014,12 +1847,11 @@
                 const isUserAdmin = isAdmin(currentUser);
                 const userVoteIndex = votes[poll.id];
                 const maxVotes = Math.max(...poll.options.map(o => o.votes));
-                
                 const dateStr = poll.createdAt ? new Date(poll.createdAt).toLocaleDateString('ru-RU') : '';
                 
                 return `
                     <div class="poll-card ${isUserAdmin ? 'admin-card' : ''}" data-id="${poll.id}">
-                        ${(isOwner || isUserAdmin) ? `<button class="delete-btn" onclick="deletePoll('${poll.id}')" title="${isUserAdmin && !isOwner ? 'Удалить (админ)' : 'Удалить мой опрос'}">×</button>` : ''}
+                        ${(isOwner || isUserAdmin) ? `<button class="delete-btn" onclick="deletePoll('${poll.id}')" title="${isUserAdmin && !isOwner ? 'Удалить (админ)' : 'Удалить'}">×</button>` : ''}
                         
                         <div class="poll-header">
                             <div class="poll-title">${escapeHtml(poll.question)}</div>
@@ -2038,9 +1870,7 @@
                         
                         <div class="options-list">
                             ${poll.options.map((option, idx) => {
-                                const percentage = poll.totalVotes > 0 
-                                    ? Math.round((option.votes / poll.totalVotes) * 100) 
-                                    : 0;
+                                const percentage = poll.totalVotes > 0 ? Math.round((option.votes / poll.totalVotes) * 100) : 0;
                                 const isWinner = option.votes === maxVotes && option.votes > 0;
                                 const isSelected = idx === userVoteIndex;
                                 
@@ -2096,14 +1926,12 @@
                 return;
             }
             
-            // Обновляем локально
             poll.options[optionIndex].votes++;
             poll.totalVotes++;
             
             votes[pollId] = optionIndex;
             localStorage.setItem('votes', JSON.stringify(votes));
             
-            // Обновляем в Firebase
             await updatePoll(pollId, {
                 options: poll.options,
                 totalVotes: poll.totalVotes
@@ -2132,7 +1960,7 @@
             
             const confirmMsg = isUserAdmin && !isOwner 
                 ? 'Вы администратор. Удалить чужой опрос?' 
-                : 'Удалить этот опрос? Это действие нельзя отменить.';
+                : 'Удалить этот опрос?';
             
             if (!confirm(confirmMsg)) return;
             
@@ -2144,8 +1972,7 @@
             showToast('Опрос удалён', 'success');
         }
 
-        // ==================== ADMIN PANEL FUNCTIONS ====================
-        
+        // ==================== ADMIN PANEL ====================
         function updateAdminStats() {
             const totalPolls = polls.length;
             const totalVotes = polls.reduce((sum, p) => sum + (p.totalVotes || 0), 0);
@@ -2153,10 +1980,7 @@
             
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            const todayPolls = polls.filter(p => {
-                const pollDate = new Date(p.createdAt);
-                return pollDate >= today;
-            }).length;
+            const todayPolls = polls.filter(p => new Date(p.createdAt) >= today).length;
 
             document.getElementById('stat-total-polls').textContent = totalPolls;
             document.getElementById('stat-total-votes').textContent = totalVotes;
@@ -2182,13 +2006,13 @@
                 return;
             }
 
-            container.innerHTML = filteredUsers.map(user => `
+                      container.innerHTML = filteredUsers.map(user => `
                 <div class="user-item">
                     <div class="user-item-info">
                         <div class="user-item-avatar ${user.isAdmin ? 'admin' : ''}">${user.username[0].toUpperCase()}</div>
                         <div class="user-item-details">
                             <h4>${escapeHtml(user.username)} ${user.isAdmin ? '<span style="color: var(--admin); font-size: 0.8rem;">(ADMIN)</span>' : ''}</h4>
-                            <span>ID: ${user.id} • Создан: ${new Date(user.createdAt).toLocaleDateString('ru-RU')}</span>
+                            <span>ID: ${user.id.slice(-6)} • ${new Date(user.createdAt).toLocaleDateString('ru-RU')}</span>
                         </div>
                     </div>
                     <div class="user-item-actions">
@@ -2196,9 +2020,7 @@
                             <button class="btn btn-secondary btn-small" onclick="toggleAdminRole('${user.id}')">
                                 ${user.isAdmin ? '❌ Забрать админ' : '✓ Сделать админом'}
                             </button>
-                            <button class="btn btn-danger btn-small" onclick="deleteUser('${user.id}')">
-                                Удалить
-                            </button>
+                            <button class="btn btn-danger btn-small" onclick="deleteUser('${user.id}')">Удалить</button>
                         ` : '<span style="color: var(--text-muted); font-size: 0.85rem;">Это вы</span>'}
                     </div>
                 </div>
@@ -2223,14 +2045,11 @@
                 const now = new Date();
                 
                 if (timeFilter === 'recent') {
-                    const dayAgo = new Date(now - 24 * 60 * 60 * 1000);
-                    matchesTime = pollDate >= dayAgo;
+                    matchesTime = pollDate >= new Date(now - 24 * 60 * 60 * 1000);
                 } else if (timeFilter === 'week') {
-                    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-                    matchesTime = pollDate >= weekAgo;
+                    matchesTime = pollDate >= new Date(now - 7 * 24 * 60 * 60 * 1000);
                 } else if (timeFilter === 'month') {
-                    const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
-                    matchesTime = pollDate >= monthAgo;
+                    matchesTime = pollDate >= new Date(now - 30 * 24 * 60 * 60 * 1000);
                 }
                 
                 return matchesSearch && matchesTime;
@@ -2263,9 +2082,7 @@
                         
                         <div class="options-list">
                             ${poll.options.map((option, idx) => {
-                                const percentage = poll.totalVotes > 0 
-                                    ? Math.round((option.votes / poll.totalVotes) * 100) 
-                                    : 0;
+                                const percentage = poll.totalVotes > 0 ? Math.round((option.votes / poll.totalVotes) * 100) : 0;
                                 const isWinner = option.votes === maxVotes && option.votes > 0;
                                 
                                 return `
@@ -2297,29 +2114,21 @@
         function clearAllData() {
             if (!isAdmin(currentUser)) return;
             
-            if (!confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ опросы, голоса и пользователей (кроме вас). Продолжить?')) return;
-            if (!confirm('Вы уверены? Это действие необратимо!')) return;
+            if (!confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные (кроме вашего аккаунта). Продолжить?')) return;
+            if (!confirm('Вы уверены? Это необратимо!')) return;
 
-            // Clear all polls
             polls = [];
             votes = {};
-            
-            // Clear other users (keep current admin)
             users = users.filter(u => u.id === currentUser.id);
             
             localStorage.setItem('polls', JSON.stringify(polls));
             localStorage.setItem('votes', JSON.stringify(votes));
             localStorage.setItem('users', JSON.stringify(users));
 
-            if (firebaseInitialized && pollsRef) {
-                pollsRef.remove();
-            }
+            if (firebaseInitialized && pollsRef) pollsRef.remove();
             if (firebaseInitialized && usersRef) {
-                // Remove all users except current from Firebase
                 users.forEach(u => {
-                    if (u.id !== currentUser.id) {
-                        usersRef.child(u.id).remove();
-                    }
+                    if (u.id !== currentUser.id) usersRef.child(u.id).remove();
                 });
             }
 
@@ -2369,14 +2178,12 @@
                     
                     if (!confirm(`Импортировать ${data.polls?.length || 0} опросов и ${data.users?.length || 0} пользователей?`)) return;
 
-                    // Import polls
                     if (data.polls && Array.isArray(data.polls)) {
                         for (const poll of data.polls) {
                             await savePoll(poll);
                         }
                     }
 
-                    // Import users (merge)
                     if (data.users && Array.isArray(data.users)) {
                         for (const user of data.users) {
                             if (!users.find(u => u.id === user.id)) {
@@ -2386,7 +2193,6 @@
                         localStorage.setItem('users', JSON.stringify(users));
                     }
 
-                    // Import votes
                     if (data.votes) {
                         Object.assign(votes, data.votes);
                         localStorage.setItem('votes', JSON.stringify(votes));
@@ -2395,7 +2201,7 @@
                     updateAdminStats();
                     renderUsersList();
                     renderAdminPolls();
-                    showToast('Данные импортированы успешно', 'success');
+                    showToast('Данные импортированы', 'success');
                 } catch (error) {
                     showToast('Ошибка импорта: ' + error.message, 'error');
                 }
@@ -2404,8 +2210,7 @@
             event.target.value = '';
         }
 
-        // ==================== UTILITY FUNCTIONS ====================
-        
+        // ==================== UTILITIES ====================
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
