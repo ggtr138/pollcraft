@@ -2,11 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>PollCraft | Админ-панель и опросы</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PollCraft | Интерактивные опросы</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -26,7 +28,6 @@
             --success: #00ff88;
             --error: #ff3366;
             --warning: #ffb800;
-            --admin-glow: rgba(255, 107, 53, 0.3);
         }
 
         body {
@@ -97,277 +98,1584 @@
             background: linear-gradient(90deg, var(--primary), var(--secondary));
         }
 
-        .auth-header { text-align: center; margin-bottom: 2.5rem; }
-        .auth-logo { font-family: 'Syne', sans-serif; font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; display: inline-flex; align-items: center; gap: 0.5rem; }
-        .auth-logo::before { content: '◉'; -webkit-text-fill-color: var(--primary); animation: pulse 2s ease-in-out infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.1); } }
-        .auth-subtitle { color: var(--text-muted); font-size: 1rem; }
-
-        .form-group { margin-bottom: 1.5rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; }
-        input[type="text"], input[type="password"], input[type="email"] {
-            width: 100%; padding: 1rem 1.2rem; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border);
-            color: var(--text); font-family: inherit; font-size: 1rem; border-radius: 12px; transition: all 0.3s;
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
         }
-        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1); }
-        .btn { padding: 1rem 2rem; border: none; border-radius: 12px; font-family: inherit; font-weight: 700; cursor: pointer; transition: all 0.3s; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; }
-        .btn-primary { background: linear-gradient(135deg, var(--primary), #0099cc); color: var(--bg); box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3); }
-        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(0, 212, 255, 0.4); }
-        .btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
-        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 0.8rem; font-size: 0.9rem; }
-        .btn-danger { background: rgba(255, 51, 102, 0.15); color: var(--error); border: 1px solid rgba(255, 51, 102, 0.3); }
-        .auth-switch { text-align: center; margin-top: 1.5rem; color: var(--text-muted); font-size: 0.9rem; }
-        .auth-switch a { color: var(--primary); text-decoration: none; font-weight: 600; cursor: pointer; }
-        .error-message { background: rgba(255, 51, 102, 0.1); border: 1px solid rgba(255, 51, 102, 0.3); color: var(--error); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 0.9rem; display: none; align-items: center; gap: 0.5rem; }
-        .error-message.show { display: flex; }
-        .hidden { display: none !important; }
 
-        /* App Layout */
-        .app-container { display: none; }
-        .app-container.show { display: block; }
-        header { padding: 1rem 4%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; background: rgba(10, 14, 39, 0.9); flex-wrap: wrap; gap: 1rem; }
-        .header-left { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
-        .logo { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
-        .logo::before { content: '◉'; font-size: 1.2rem; -webkit-text-fill-color: var(--primary); animation: pulse 2s ease-in-out infinite; }
-        .nav-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .tab { padding: 0.6rem 1.5rem; background: transparent; border: 1px solid transparent; color: var(--text-muted); cursor: pointer; border-radius: 50px; font-family: inherit; font-weight: 600; transition: all 0.3s; font-size: 0.9rem; }
-        .tab:hover { color: var(--text); border-color: var(--border); }
-        .tab.active { background: var(--surface); color: var(--primary); border-color: var(--primary); }
-        .user-menu { display: flex; align-items: center; gap: 1rem; }
-        .user-info { display: flex; align-items: center; gap: 0.8rem; padding: 0.5rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 50px; }
-        .user-avatar { width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--bg); }
-        .btn-logout { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 0.5rem 1rem; border-radius: 50px; cursor: pointer; transition: all 0.3s; }
-        .btn-logout:hover { border-color: var(--error); color: var(--error); }
-        main { max-width: 1400px; margin: 0 auto; padding: 2rem 4%; }
-        .view { display: none; animation: fadeIn 0.4s ease; }
-        .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .auth-logo {
+            font-family: 'Syne', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
 
-        /* Create poll */
-        .create-container { max-width: 700px; margin: 0 auto; }
-        .section-title { font-family: 'Syne', sans-serif; font-size: 2.2rem; margin-bottom: 0.5rem; font-weight: 700; }
-        .options-container { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; }
-        .option-input-wrapper { display: flex; gap: 1rem; align-items: center; }
-        .option-number { width: 32px; height: 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--primary); flex-shrink: 0; }
-        .btn-icon { width: 36px; height: 36px; padding: 0; justify-content: center; border-radius: 50%; }
+        .auth-logo::before {
+            content: '◉';
+            -webkit-text-fill-color: var(--primary);
+            animation: pulse 2s ease-in-out infinite;
+        }
 
-        /* Polls grid */
-        .polls-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2rem; }
-        .poll-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 1.5rem; position: relative; transition: all 0.3s; backdrop-filter: blur(10px); }
-        .poll-card:hover { transform: translateY(-5px); border-color: rgba(255, 255, 255, 0.2); }
-        .poll-title { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; padding-right: 2rem; }
-        .poll-meta { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
-        .poll-status { padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
-        .status-active { background: rgba(0, 255, 136, 0.1); color: var(--success); border: 1px solid rgba(0, 255, 136, 0.3); }
-        .status-voted { background: rgba(0, 212, 255, 0.1); color: var(--primary); }
-        .status-owner { background: rgba(255, 184, 0, 0.1); color: var(--warning); }
-        .options-list { display: flex; flex-direction: column; gap: 0.8rem; }
-        .option-item { position: relative; padding: 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 12px; cursor: pointer; overflow: hidden; transition: all 0.2s; }
-        .option-item:hover:not(.disabled) { background: var(--surface-hover); border-color: var(--primary); transform: translateX(5px); }
-        .option-progress { position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.05)); transition: width 0.5s ease; z-index: 0; }
-        .option-content { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; }
-        .delete-btn { position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.3rem; transition: all 0.3s; width: 32px; height: 32px; border-radius: 50%; z-index: 10; }
-        .delete-btn:hover { color: var(--error); background: rgba(255, 51, 102, 0.1); transform: rotate(90deg); }
-        .total-votes { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); text-align: center; color: var(--text-muted); }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
 
-        /* Admin Panel */
-        .admin-stats { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
-        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 1.5rem; flex: 1; min-width: 150px; text-align: center; backdrop-filter: blur(8px); }
-        .stat-card h3 { font-size: 2rem; color: var(--primary); font-family: 'Syne'; }
-        .users-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 20px; overflow: hidden; }
-        .users-table th, .users-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); }
-        .users-table th { background: rgba(0, 212, 255, 0.1); color: var(--primary); font-weight: 600; }
-        .badge-admin { background: rgba(255, 107, 53, 0.2); color: var(--secondary); padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
-        .badge-user { background: rgba(255, 255, 255, 0.1); color: var(--text-muted); padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; }
+        .auth-subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        input[type="text"], input[type="password"], input[type="email"] {
+            width: 100%;
+            padding: 1rem 1.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .input-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .password-strength {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+            display: none;
+        }
+
+        .password-strength.show {
+            display: block;
+        }
+
+        .strength-bar {
+            height: 100%;
+            width: 0;
+            transition: all 0.3s;
+            border-radius: 2px;
+        }
+
+        .strength-weak { background: var(--error); width: 33%; }
+        .strength-medium { background: var(--warning); width: 66%; }
+        .strength-strong { background: var(--success); width: 100%; }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #0099cc);
+            color: var(--bg);
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .auth-switch a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            color: var(--error);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .error-message.show {
+            display: flex;
+        }
+
+        /* Main App Layout */
+        .app-container {
+            display: none;
+        }
+
+        .app-container.show {
+            display: block;
+        }
+
+        header {
+            padding: 1.5rem 4%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10, 14, 39, 0.8);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .logo::before {
+            content: '◉';
+            font-size: 1.2rem;
+            -webkit-text-fill-color: var(--primary);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .tab {
+            padding: 0.6rem 1.5rem;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 50px;
+            font-family: inherit;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .tab:hover {
+            color: var(--text);
+            border-color: var(--border);
+        }
+
+        .tab.active {
+            background: var(--surface);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.5rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--bg);
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .btn-logout {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+        }
+
+        .btn-logout:hover {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 4%;
+        }
+
+        .view {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Create Poll Section */
+        .create-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .section-subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        .sync-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .sync-status.synced {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .sync-status.syncing::after {
+            content: '';
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--primary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .option-input-wrapper {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .option-number {
+            width: 32px;
+            height: 32px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--primary);
+            flex-shrink: 0;
+        }
+
+        .btn-danger {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            width: auto;
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 51, 102, 0.2);
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        /* Polls Grid */
+        .polls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .poll-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .poll-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .poll-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .poll-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .poll-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .poll-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 0.5rem;
+            padding-right: 2rem;
+        }
+
+        .poll-meta {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .poll-author {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .author-avatar {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--bg);
+        }
+
+        .poll-date {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .poll-status {
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-voted {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--primary);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .status-owner {
+            background: rgba(255, 184, 0, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(255, 184, 0, 0.3);
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .option-item {
+            position: relative;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            overflow: hidden;
+        }
+
+        .option-item:hover:not(.disabled) {
+            background: var(--surface-hover);
+            border-color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .option-item.disabled {
+            cursor: default;
+        }
+
+        .option-item.selected {
+            border-color: var(--success);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .option-progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.05));
+            transition: width 0.5s ease;
+            z-index: 0;
+        }
+
+        .option-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .option-text {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .option-stats {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .vote-count {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .percentage {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            color: var(--secondary);
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .total-votes {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .total-votes strong {
+            color: var(--text);
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.3rem;
+            line-height: 1;
+            transition: all 0.3s;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            z-index: 10;
+        }
+
+        .delete-btn:hover {
+            color: var(--error);
+            background: rgba(255, 51, 102, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            font-family: 'Syne', sans-serif;
+        }
 
         /* Toast */
-        .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; backdrop-filter: blur(20px); transform: translateX(400px); transition: transform 0.3s; z-index: 1000; display: flex; align-items: center; gap: 0.8rem; }
-        .toast.show { transform: translateX(0); }
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: none; align-items: center; justify-content: center; z-index: 9999; }
-        .loading-overlay.show { display: flex; }
-        .spinner { width: 50px; height: 50px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        #confetti { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 999; }
-        @media (max-width: 768px) { .header-left, .nav-tabs { width: 100%; justify-content: center; } .user-menu { justify-content: center; } .section-title { font-size: 1.6rem; } }
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            max-width: 350px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-icon {
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .toast.success { border-color: rgba(0, 255, 136, 0.3); }
+        .toast.success .toast-icon { color: var(--success); }
+        .toast.error { border-color: rgba(255, 51, 102, 0.3); }
+        .toast.error .toast-icon { color: var(--error); }
+
+        /* Confetti */
+        #confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .header-left {
+                flex-direction: column;
+                gap: 1rem;
+                width: 100%;
+            }
+
+            .nav-tabs {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .user-menu {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .section-title {
+                font-size: 1.8rem;
+            }
+
+            .polls-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .auth-box {
+                padding: 2rem 1.5rem;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
-<div class="bg-mesh"></div>
-<canvas id="confetti"></canvas>
-<div class="loading-overlay" id="loading"><div class="spinner"></div></div>
-
-<!-- Auth Container -->
-<div class="auth-container" id="auth-container">
-    <div class="auth-box" id="login-form">
-        <div class="auth-header"><div class="auth-logo">PollCraft</div><p class="auth-subtitle">Войдите в систему</p></div>
-        <div class="error-message" id="login-error"><span>⚠️</span><span></span></div>
-        <form id="login-form-element">
-            <div class="form-group"><label>Имя пользователя</label><input type="text" id="login-username" placeholder="admin или ваш логин" required></div>
-            <div class="form-group"><label>Пароль</label><input type="password" id="login-password" placeholder="••••••" required></div>
-            <button type="submit" class="btn btn-primary"><span>→</span> Войти</button>
-        </form>
-        <div class="auth-switch">Нет аккаунта? <a onclick="showRegister()">Создать</a></div>
+    <div class="bg-mesh"></div>
+    <canvas id="confetti"></canvas>
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
     </div>
-    <div class="auth-box hidden" id="register-form">
-        <div class="auth-header"><div class="auth-logo">PollCraft</div><p class="auth-subtitle">Регистрация</p></div>
-        <div class="error-message" id="register-error"><span>⚠️</span><span></span></div>
-        <form id="register-form-element">
-            <div class="form-group"><label>Имя пользователя</label><input type="text" id="reg-username" placeholder="3-20 символов (буквы/цифры/_ )" required></div>
-            <div class="form-group"><label>Пароль</label><input type="password" id="reg-password" placeholder="минимум 6 символов" required></div>
-            <div class="form-group"><label>Подтвердите пароль</label><input type="password" id="reg-confirm" required></div>
-            <button type="submit" class="btn btn-primary"><span>✓</span> Создать</button>
-        </form>
-        <div class="auth-switch">Уже есть аккаунт? <a onclick="showLogin()">Войти</a></div>
-    </div>
-</div>
 
-<!-- Main App -->
-<div class="app-container" id="app-container">
-    <header>
-        <div class="header-left"><div class="logo" onclick="switchTab('polls')">PollCraft</div>
-            <nav class="nav-tabs">
-                <button class="tab" onclick="switchTab('create')" id="tab-create">📝 Создать</button>
-                <button class="tab" onclick="switchTab('polls')" id="tab-polls">📊 Опросы</button>
-                <button class="tab admin-tab hidden" onclick="switchTab('admin')" id="tab-admin">⚙️ Админ панель</button>
-            </nav>
-        </div>
-        <div class="user-menu"><div class="user-info"><div class="user-avatar" id="header-avatar">U</div><span class="user-name" id="header-username"></span></div><button class="btn-logout" onclick="logout()">Выйти</button></div>
-    </header>
-    <main>
-        <div id="create-view" class="view">
-            <div class="create-container"><h1 class="section-title">Создайте опрос</h1><p class="section-subtitle">Вопрос + варианты</p>
-                <form id="poll-form"><div class="form-group"><label>Вопрос</label><input type="text" id="question-input" placeholder="Например: Какой язык учить?" required></div>
-                <div class="form-group"><label>Варианты</label><div class="options-container" id="options-container"><div class="option-input-wrapper"><div class="option-number">1</div><input type="text" class="option-input" placeholder="Вариант 1" required></div><div class="option-input-wrapper"><div class="option-number">2</div><input type="text" class="option-input" placeholder="Вариант 2" required></div></div>
-                <button type="button" class="btn btn-outline" onclick="addOption()"><span>+</span> Добавить вариант</button></div>
-                <button type="submit" class="btn btn-primary">🚀 Опубликовать</button></form>
+    <!-- Auth Container -->
+    <div class="auth-container" id="auth-container">
+        <!-- Login Form -->
+        <div class="auth-box" id="login-form">
+            <div class="auth-header">
+                <div class="auth-logo">PollCraft</div>
+                <p class="auth-subtitle">Войдите для доступа к опросам</p>
+            </div>
+            
+            <div class="error-message" id="login-error">
+                <span>⚠️</span>
+                <span></span>
+            </div>
+
+            <form id="login-form-element">
+                <div class="form-group">
+                    <label>Имя пользователя</label>
+                    <input type="text" id="login-username" placeholder="Введите имя пользователя" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="login-password" placeholder="Введите пароль" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <span>→</span> Войти
+                </button>
+            </form>
+
+            <div class="auth-switch">
+                Нет аккаунта? <a onclick="showRegister()">Создать аккаунт</a>
             </div>
         </div>
-        <div id="polls-view" class="view"><h1 class="section-title">Все опросы</h1><div id="polls-container" class="polls-grid"></div></div>
-        <div id="admin-view" class="view"><h1 class="section-title">Администрирование</h1><div class="admin-stats" id="admin-stats"></div><h3>👥 Пользователи</h3><div style="overflow-x: auto;"><table class="users-table" id="users-table"><thead><tr><th>Логин</th><th>Дата регистрации</th><th>Роль</th><th>Действия</th></tr></thead><tbody id="users-tbody"></tbody></table></div><div style="margin-top: 2rem;"><button class="btn btn-secondary" id="refresh-admin-btn" onclick="loadAdminData()">🔄 Обновить</button></div></div>
-    </main>
-</div>
-<div id="toast" class="toast"><span class="toast-icon"></span><span class="toast-message"></span></div>
 
-<script>
-    // ---------- FIREBASE ----------
-    const firebaseConfig = { apiKey: "AIzaSyD4TwVz9q35yB_ahYbQeJiQW7usRXbPaTc", authDomain: "pollcraft1.firebaseapp.com", databaseURL: "https://pollcraft1-default-rtdb.europe-west1.firebasedatabase.app", projectId: "pollcraft1", storageBucket: "pollcraft1.firebasestorage.app", messagingSenderId: "717690218593", appId: "1:717690218593:web:a6ba225afed82d12f16220" };
-    let app, database, firebaseReady = false;
-    try { app = firebase.initializeApp(firebaseConfig); database = firebase.database(); firebaseReady = true; } catch(e) { console.warn(e); }
+        <!-- Register Form -->
+        <div class="auth-box hidden" id="register-form">
+            <div class="auth-header">
+                <div class="auth-logo">PollCraft</div>
+                <p class="auth-subtitle">Создайте новый аккаунт</p>
+            </div>
 
-    // Глобальные переменные
-    let currentUser = null;          // { id, username, isAdmin, createdAt }
-    let polls = [];                  // массив опросов из firebase
-    let allUsers = [];               // список пользователей
-    let userVotes = {};              // { pollId: optionIndex } для текущего пользователя
+            <div class="error-message" id="register-error">
+                <span>⚠️</span>
+                <span></span>
+            </div>
 
-    // DOM элементы
-    function showToast(msg, type='success') { let t=document.getElementById('toast'); t.className=`toast ${type}`; t.querySelector('.toast-icon').innerHTML=type==='success'?'✓':'✕'; t.querySelector('.toast-message').innerText=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
-    function showLoading(show) { document.getElementById('loading').classList.toggle('show', show); }
+            <form id="register-form-element">
+                <div class="form-group">
+                    <label>Имя пользователя</label>
+                    <input type="text" id="reg-username" placeholder="Придумайте имя (3-20 символов)" required autocomplete="username">
+                    <div class="input-hint">
+                        <span>💡</span> Только буквы, цифры и подчеркивание
+                    </div>
+                </div>
 
-    // Helper: загрузить пользователей из Firebase
-    async function loadUsersFromFirebase() {
-        if(!firebaseReady) return [];
-        try { const snap = await database.ref('users').once('value'); const data = snap.val(); if(data) return Object.keys(data).map(key=>({id:key, ...data[key]})); return []; }
-        catch(e){ console.error(e); return []; }
-    }
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="reg-password" placeholder="Минимум 6 символов" required autocomplete="new-password">
+                    <div class="password-strength" id="strength-bar">
+                        <div class="strength-bar"></div>
+                    </div>
+                </div>
 
-    // Сохранить пользователя
-    async function saveUserToFirebase(user) {
-        if(!firebaseReady) return false;
-        try { await database.ref(`users/${user.id}`).set(user); return true; } catch(e){ return false; }
-    }
+                <div class="form-group">
+                    <label>Подтвердите пароль</label>
+                    <input type="password" id="reg-confirm" placeholder="Повторите пароль" required autocomplete="new-password">
+                </div>
 
-    // Инициализация / создание админа по умолчанию
-    async function initAdminAndUsers() {
-        if(!firebaseReady) return;
-        const usersList = await loadUsersFromFirebase();
-        if(usersList.length === 0) {
-            const admin = { id: 'admin_1', username: 'admin', password: 'admin', isAdmin: true, createdAt: new Date().toISOString() };
-            await database.ref('users/admin_1').set(admin);
-            showToast('Создан администратор по умолчанию: admin / admin', 'success');
+                <button type="submit" class="btn btn-primary" id="reg-submit">
+                    <span>✓</span> Создать аккаунт
+                </button>
+            </form>
+
+            <div class="auth-switch">
+                Уже есть аккаунт? <a onclick="showLogin()">Войти</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="app-container">
+        <header>
+            <div class="header-left">
+                <div class="logo" onclick="switchTab('polls')">PollCraft</div>
+                <nav class="nav-tabs">
+                    <button class="tab active" onclick="switchTab('create')" id="tab-create">Создать</button>
+                    <button class="tab" onclick="switchTab('polls')" id="tab-polls">Опросы</button>
+                </nav>
+            </div>
+            
+            <div class="user-menu">
+                <div class="user-info">
+                    <div class="user-avatar" id="header-avatar">U</div>
+                    <span class="user-name" id="header-username">User</span>
+                </div>
+                <button class="btn-logout" onclick="logout()">Выйти</button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Create View -->
+            <div id="create-view" class="view active">
+                <div class="create-container">
+                    <h1 class="section-title">Создайте опрос</h1>
+                    <p class="section-subtitle">Задайте вопрос и добавьте варианты ответов</p>
+                    
+                    <div class="sync-status synced" id="sync-status">
+                        <span>☁️</span> Онлайн режим — данные синхронизируются автоматически
+                    </div>
+
+                    <form id="poll-form">
+                        <div class="form-group">
+                            <label>Вопрос</label>
+                            <input type="text" id="question-input" placeholder="Например: Какой ваш любимый язык программирования?" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Варианты ответов</label>
+                            <div class="options-container" id="options-container">
+                                <div class="option-input-wrapper">
+                                    <div class="option-number">1</div>
+                                    <input type="text" class="option-input" placeholder="Вариант 1" required>
+                                </div>
+                                <div class="option-input-wrapper">
+                                    <div class="option-number">2</div>
+                                    <input type="text" class="option-input" placeholder="Вариант 2" required>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline" onclick="addOption()">
+                                <span>+</span> Добавить вариант
+                            </button>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
+                            <span>🚀</span> Опубликовать опрос
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Polls View -->
+            <div id="polls-view" class="view">
+                <h1 class="section-title">Все опросы</h1>
+                <p class="section-subtitle" id="polls-subtitle">Голосуйте и смотрите результаты в реальном времени</p>
+                
+                <div id="polls-container" class="polls-grid">
+                    <!-- Polls rendered here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast" class="toast">
+        <span class="toast-icon"></span>
+        <span class="toast-message"></span>
+    </div>
+
+    <script>
+        // ==================== FIREBASE CONFIGURATION ====================
+        // ЗАМЕНИТЕ ЭТИ ДАННЫЕ НА СВОИ ИЗ КОНСОЛИ FIREBASE!
+        const firebaseConfig = {
+  apiKey: "AIzaSyD4TwVz9q35yB_ahYbQeJiQW7usRXbPaTc",
+  authDomain: "pollcraft1.firebaseapp.com",
+  databaseURL: "https://pollcraft1-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "pollcraft1",
+  storageBucket: "pollcraft1.firebasestorage.app",
+  messagingSenderId: "717690218593",
+  appId: "1:717690218593:web:a6ba225afed82d12f16220"
+};
+        // Инициализация Firebase
+        let app, database, auth;
+        let firebaseInitialized = false;
+
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            auth = firebase.auth();
+            firebaseInitialized = true;
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            // Режим fallback — localStorage
+            firebaseInitialized = false;
         }
-        allUsers = await loadUsersFromFirebase();
-    }
 
-    // Синхронизация опросов (реалтайм)
-    let pollsRef = null;
-    function initPollsListener() {
-        if(!firebaseReady) return;
-        if(pollsRef) pollsRef.off();
-        pollsRef = database.ref('polls');
-        pollsRef.on('value', (snap) => {
-            const data = snap.val();
-            if(data) polls = Object.keys(data).map(key=>({id:key, ...data[key]})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-            else polls = [];
-            renderPolls();
+        // ==================== STATE MANAGEMENT ====================
+        let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+        let users = JSON.parse(localStorage.getItem('users')) || [];
+        let polls = [];
+        let votes = JSON.parse(localStorage.getItem('votes')) || {};
+        let pollsRef = null;
+
+        // ==================== CONFETTI ====================
+        const confettiCanvas = document.getElementById('confetti');
+        const ctx = confettiCanvas.getContext('2d');
+        let confettiParticles = [];
+
+        function resizeCanvas() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function createConfetti(x, y) {
+            const colors = ['#00d4ff', '#ff6b35', '#00ff88', '#ff3366', '#ffffff'];
+            for (let i = 0; i < 50; i++) {
+                confettiParticles.push({
+                    x: x || window.innerWidth / 2,
+                    y: y || window.innerHeight / 2,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 1) * 10 - 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    size: Math.random() * 8 + 4,
+                    life: 1,
+                    decay: 0.02
+                });
+            }
+        }
+
+        function updateConfetti() {
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            confettiParticles = confettiParticles.filter(p => p.life > 0);
+            
+            confettiParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.3;
+                p.life -= p.decay;
+                
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+            
+            requestAnimationFrame(updateConfetti);
+        }
+        updateConfetti();
+
+        // ==================== FIREBASE FUNCTIONS ====================
+        
+        function initFirebaseListeners() {
+            if (!firebaseInitialized) {
+                // Fallback: загружаем из localStorage
+                polls = JSON.parse(localStorage.getItem('polls')) || [];
+                renderPolls();
+                return;
+            }
+
+            pollsRef = database.ref('polls');
+            
+            // Слушаем изменения в реальном времени
+            pollsRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    // Преобразуем объект в массив
+                    polls = Object.keys(data).map(key => ({
+                        id: key,
+                        ...data[key]
+                    })).sort((a, b) => b.createdAt - a.createdAt);
+                } else {
+                    polls = [];
+                }
+                renderPolls();
+                updateSyncStatus('synced');
+            }, (error) => {
+                console.error('Firebase read failed:', error);
+                updateSyncStatus('offline');
+                // Fallback
+                polls = JSON.parse(localStorage.getItem('polls')) || [];
+                renderPolls();
+            });
+        }
+
+        async function savePoll(poll) {
+            if (!firebaseInitialized) {
+                // Fallback: сохраняем в localStorage
+                polls.unshift(poll);
+                localStorage.setItem('polls', JSON.stringify(polls));
+                return true;
+            }
+
+            try {
+                const newPollRef = pollsRef.push();
+                await newPollRef.set({
+                    ...poll,
+                    id: newPollRef.key,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                });
+                return true;
+            } catch (error) {
+                console.error('Save failed:', error);
+                // Fallback
+                polls.unshift(poll);
+                localStorage.setItem('polls', JSON.stringify(polls));
+                return false;
+            }
+        }
+
+        async function updatePoll(pollId, updates) {
+            if (!firebaseInitialized) {
+                const idx = polls.findIndex(p => p.id === pollId);
+                if (idx !== -1) {
+                    polls[idx] = { ...polls[idx], ...updates };
+                    localStorage.setItem('polls', JSON.stringify(polls));
+                }
+                return;
+            }
+
+            try {
+                await database.ref(`polls/${pollId}`).update(updates);
+            } catch (error) {
+                console.error('Update failed:', error);
+                // Fallback
+                const idx = polls.findIndex(p => p.id === pollId);
+                if (idx !== -1) {
+                    polls[idx] = { ...polls[idx], ...updates };
+                    localStorage.setItem('polls', JSON.stringify(polls));
+                }
+            }
+        }
+
+        async function deletePollFromFirebase(pollId) {
+            if (!firebaseInitialized) {
+                polls = polls.filter(p => p.id !== pollId);
+                localStorage.setItem('polls', JSON.stringify(polls));
+                return;
+            }
+
+            try {
+                await database.ref(`polls/${pollId}`).remove();
+            } catch (error) {
+                console.error('Delete failed:', error);
+                polls = polls.filter(p => p.id !== pollId);
+                localStorage.setItem('polls', JSON.stringify(polls));
+            }
+        }
+
+        function updateSyncStatus(status) {
+            const el = document.getElementById('sync-status');
+            if (!el) return;
+            
+            el.className = 'sync-status';
+            if (status === 'synced') {
+                el.classList.add('synced');
+                el.innerHTML = '<span>✓</span> Онлайн — данные синхронизированы';
+            } else if (status === 'syncing') {
+                el.classList.add('syncing');
+                el.innerHTML = '<span></span> Синхронизация...';
+            } else if (status === 'offline') {
+                el.innerHTML = '<span>⚠️</span> Оффлайн режим';
+            }
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        // ==================== AUTH FUNCTIONS ====================
+        function init() {
+            if (currentUser) {
+                showApp();
+                initFirebaseListeners();
+            } else {
+                showAuth();
+            }
+        }
+
+        function showAuth() {
+            document.getElementById('auth-container').style.display = 'flex';
+            document.getElementById('app-container').classList.remove('show');
+        }
+
+        function showApp() {
+            document.getElementById('auth-container').style.display = 'none';
+            document.getElementById('app-container').classList.add('show');
+            updateHeader();
+        }
+
+        function showLogin() {
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+            clearErrors();
+        }
+
+        function showRegister() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+            clearErrors();
+        }
+
+        function clearErrors() {
+            document.getElementById('login-error').classList.remove('show');
+            document.getElementById('register-error').classList.remove('show');
+        }
+
+        function showError(elementId, message) {
+            const errorEl = document.getElementById(elementId);
+            errorEl.querySelector('span:last-child').textContent = message;
+            errorEl.classList.add('show');
+        }
+
+        function updateHeader() {
+            if (currentUser) {
+                document.getElementById('header-username').textContent = currentUser.username;
+                document.getElementById('header-avatar').textContent = currentUser.username[0].toUpperCase();
+            }
+        }
+
+        // Password strength indicator
+        document.getElementById('reg-password')?.addEventListener('input', function(e) {
+            const val = e.target.value;
+            const bar = document.querySelector('.strength-bar');
+            const container = document.getElementById('strength-bar');
+            
+            if (val.length > 0) {
+                container.classList.add('show');
+                bar.className = 'strength-bar';
+                
+                if (val.length < 6) {
+                    bar.classList.add('strength-weak');
+                } else if (val.length < 10 || !/[A-Z]/.test(val) || !/[0-9]/.test(val)) {
+                    bar.classList.add('strength-medium');
+                } else {
+                    bar.classList.add('strength-strong');
+                }
+            } else {
+                container.classList.remove('show');
+            }
         });
-    }
 
-    async function savePollToFirebase(poll) {
-        if(!firebaseReady) return false;
-        try { const ref = database.ref('polls').push(); await ref.set({...poll, id:ref.key, createdAt: Date.now()}); return true; } catch(e){ return false; }
-    }
-    async function updatePollInFirebase(pollId, updates) { if(firebaseReady) await database.ref(`polls/${pollId}`).update(updates); }
-    async function deletePollFromFirebase(pollId) { if(firebaseReady) await database.ref(`polls/${pollId}`).remove(); }
+        // Login handler
+        document.getElementById('login-form-element')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            clearErrors();
+            
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+            
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (!user) {
+                showError('login-error', 'Неверное имя пользователя или пароль');
+                return;
+            }
+            
+            currentUser = user;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            showApp();
+            initFirebaseListeners();
+            showToast('Добро пожаловать, ' + username + '!', 'success');
+        });
 
-    // Аутентификация
-    async function login(username, password) {
-        const users = await loadUsersFromFirebase();
-        const user = users.find(u => u.username === username && u.password === password);
-        if(!user) throw new Error('Неверный логин или пароль');
-        currentUser = { id: user.id, username: user.username, isAdmin: user.isAdmin || false, createdAt: user.createdAt };
-        localStorage.setItem('currentUser', JSON.stringify({ id:currentUser.id, username:currentUser.username, isAdmin:currentUser.isAdmin }));
-        // Загрузить голоса текущего пользователя
-        if(firebaseReady) { const snap = await database.ref(`userVotes/${currentUser.id}`).once('value'); if(snap.val()) userVotes = snap.val(); else userVotes = {}; }
-        else userVotes = JSON.parse(localStorage.getItem('votes')) || {};
-        return true;
-    }
-    async function register(username, password) {
-        const users = await loadUsersFromFirebase();
-        if(users.find(u=>u.username===username)) throw new Error('Имя занято');
-        if(!/^[a-zA-Z0-9_]{3,20}$/.test(username)) throw new Error('Недопустимые символы');
-        if(password.length<6) throw new Error('Пароль минимум 6 символов');
-        const newId = Date.now().toString();
-        const newUser = { id:newId, username, password, isAdmin: false, createdAt: new Date().toISOString() };
-        await saveUserToFirebase(newUser);
-        currentUser = { id:newId, username, isAdmin:false, createdAt:newUser.createdAt };
-        localStorage.setItem('currentUser', JSON.stringify({ id:currentUser.id, username:currentUser.username, isAdmin:false }));
-        userVotes = {};
-        return true;
-    }
-    function logout() { currentUser=null; localStorage.removeItem('currentUser'); if(pollsRef) pollsRef.off(); document.getElementById('auth-container').style.display='flex'; document.getElementById('app-container').classList.remove('show'); showLogin(); showToast('Выход выполнен'); }
+        // Register handler
+        document.getElementById('register-form-element')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            clearErrors();
+            
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const confirm = document.getElementById('reg-confirm').value;
+            
+            // Validation
+            if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+                showError('register-error', 'Имя пользователя: 3-20 символов, только буквы, цифры и подчеркивание');
+                return;
+            }
+            
+            if (users.some(u => u.username === username)) {
+                showError('register-error', 'Это имя пользователя уже занято');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showError('register-error', 'Пароль должен быть минимум 6 символов');
+                return;
+            }
+            
+            if (password !== confirm) {
+                showError('register-error', 'Пароли не совпадают');
+                return;
+            }
+            
+            // Create user
+            const newUser = {
+                id: Date.now().toString(),
+                username: username,
+                password: password,
+                createdAt: new Date().toISOString()
+            };
+            
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            currentUser = newUser;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            showApp();
+            initFirebaseListeners();
+            showToast('Аккаунт создан успешно!', 'success');
+        });
 
-    // UI управление
-    function showApp() { document.getElementById('auth-container').style.display='none'; document.getElementById('app-container').classList.add('show'); updateHeader(); updateAdminTab(); if(currentUser?.isAdmin) loadAdminData(); }
-    function showAuth() { document.getElementById('auth-container').style.display='flex'; document.getElementById('app-container').classList.remove('show'); }
-    function showLogin() { document.getElementById('login-form').classList.remove('hidden'); document.getElementById('register-form').classList.add('hidden'); }
-    function showRegister() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
-    function updateHeader() { if(currentUser) { document.getElementById('header-username').innerText=currentUser.username; document.getElementById('header-avatar').innerText=currentUser.username[0].toUpperCase(); } }
-    function updateAdminTab() { const tab = document.getElementById('tab-admin'); if(currentUser && currentUser.isAdmin) tab.classList.remove('hidden'); else tab.classList.add('hidden'); }
-    async function loadAdminData() { if(!currentUser?.isAdmin) return; showLoading(true); const users = await loadUsersFromFirebase(); allUsers = users; const totalPolls = polls.length; const totalVotes = polls.reduce((sum,p)=>sum+(p.totalVotes||0),0); document.getElementById('admin-stats').innerHTML = `<div class="stat-card"><h3>${allUsers.length}</h3><p>Пользователей</p></div><div class="stat-card"><h3>${totalPolls}</h3><p>Опросов</p></div><div class="stat-card"><h3>${totalVotes}</h3><p>Голосов</p></div>`; renderUsersTable(); showLoading(false); }
-    function renderUsersTable() { const tbody = document.getElementById('users-tbody'); if(!tbody) return; tbody.innerHTML = allUsers.map(u => `<tr><td>${escapeHtml(u.username)}</td><td>${new Date(u.createdAt).toLocaleDateString()}</td><td><span class="${u.isAdmin ? 'badge-admin' : 'badge-user'}">${u.isAdmin ? 'Админ' : 'Пользователь'}</span></td><td>${u.id !== currentUser?.id ? `<button class="btn btn-outline" style="padding:0.3rem 0.8rem;width:auto;" onclick="toggleAdmin('${u.id}')">${u.isAdmin ? '🔽 Снять админа' : '⭐ Назначить админа'}</button>` : '<span style="opacity:0.5;">Вы</span>'}</td></tr>`).join(''); }
-    async function toggleAdmin(userId) { if(!currentUser?.isAdmin) return; const user = allUsers.find(u=>u.id===userId); if(!user) return; const newAdmin = !user.isAdmin; await database.ref(`users/${userId}/isAdmin`).set(newAdmin); if(currentUser.id === userId) { currentUser.isAdmin = newAdmin; localStorage.setItem('currentUser', JSON.stringify({ id:currentUser.id, username:currentUser.username, isAdmin:currentUser.isAdmin })); updateAdminTab(); } await loadAdminData(); showToast(`Роль изменена на ${newAdmin ? 'администратора' : 'пользователя'}`, 'success'); renderPolls(); }
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            if (pollsRef) {
+                pollsRef.off();
+            }
+            showAuth();
+            showLogin();
+            document.getElementById('login-form-element').reset();
+            showToast('Вы вышли из системы', 'success');
+        }
 
-    // Опросы: голосование, удаление
-    async function vote(pollId, optionIndex) { if(!currentUser) { showToast('Войдите', 'error'); return; } const poll = polls.find(p=>p.id===pollId); if(!poll) return; if(poll.authorId === currentUser.id) { showToast('Нельзя голосовать в своём опросе','error'); return; } if(userVotes[pollId] !== undefined) { showToast('Вы уже голосовали','error'); return; } poll.options[optionIndex].votes++; poll.totalVotes = (poll.totalVotes||0)+1; userVotes[pollId] = optionIndex; if(firebaseReady) { await updatePollInFirebase(pollId, { options:poll.options, totalVotes:poll.totalVotes }); await database.ref(`userVotes/${currentUser.id}/${pollId}`).set(optionIndex); } showToast('Голос принят!','success'); createConfetti(); renderPolls(); }
-    async function deletePoll(pollId) { const poll = polls.find(p=>p.id===pollId); if(!poll) return; if(!currentUser?.isAdmin && poll.authorId !== currentUser?.id) { showToast('Нет прав','error'); return; } if(confirm('Удалить опрос?')) { await deletePollFromFirebase(pollId); if(firebaseReady) await database.ref(`userVotes/${currentUser?.id}/${pollId}`).remove(); showToast('Опрос удалён','success'); } }
-    function renderPolls() { const container = document.getElementById('polls-container'); if(!container) return; if(polls.length===0) { container.innerHTML='<div class="empty-state"><div class="empty-state-icon">📭</div><h3>Нет опросов</h3><p>Создайте первый!</p></div>'; return; } container.innerHTML = polls.map(poll=>{ const hasVoted = userVotes[poll.id]!==undefined; const isOwner = currentUser && poll.authorId === currentUser.id; const canDelete = currentUser && (currentUser.isAdmin || isOwner); const maxVotes = Math.max(...poll.options.map(o=>o.votes||0)); return `<div class="poll-card" data-id="${poll.id}">${canDelete ? `<button class="delete-btn" onclick="deletePoll('${poll.id}')">×</button>` : ''}<div class="poll-header"><div class="poll-title">${escapeHtml(poll.question)}</div><div class="poll-meta"><div>👤 ${escapeHtml(poll.authorName||'anon')}</div><span>${new Date(poll.createdAt).toLocaleDateString()}</span>${isOwner?'<span class="poll-status status-owner">Мой</span>':''}${hasVoted?'<span class="poll-status status-voted">✓ Голос</span>':'<span class="poll-status status-active">Активен</span>'}</div></div><div class="options-list">${poll.options.map((opt,idx)=>{ const perc = poll.totalVotes>0 ? Math.round((opt.votes/poll.totalVotes)*100) : 0; const isWinner = opt.votes === maxVotes && maxVotes>0; const isSelected = userVotes[poll.id] === idx; return `<div class="option-item ${hasVoted ? 'disabled' : ''}" onclick="${!hasVoted && !isOwner ? `vote('${poll.id}',${idx})` : ''}"><div class="option-progress" style="width:${hasVoted ? perc : 0}%"></div><div class="option-content"><span>${escapeHtml(opt.text)}${isWinner && hasVoted ? ' 👑' : ''}${isSelected ? ' ✓' : ''}</span><div class="option-stats">${hasVoted ? `<span>${opt.votes} (${perc}%)</span>` : '<span style="font-size:0.8rem;">нажмите</span>'}</div></div></div>`; }).join('')}</div><div class="total-votes">Всего голосов: <strong>${poll.totalVotes||0}</strong></div></div>`; }).join(''); }
-    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-    function addOption() { const c=document.getElementById('options-container'); const count=c.children.length+1; const div=document.createElement('div'); div.className='option-input-wrapper'; div.innerHTML=`<div class="option-number">${count}</div><input type="text" class="option-input" placeholder="Вариант ${count}" required><button type="button" class="btn btn-danger btn-icon" onclick="this.parentElement.remove();updateOptionNumbers()">×</button>`; c.appendChild(div); }
-    function updateOptionNumbers() { document.querySelectorAll('.option-number').forEach((num,i)=>num.innerText=i+1); }
-    function switchTab(tab) { document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); if(tab==='create'){ document.getElementById('tab-create').classList.add('active'); document.getElementById('create-view').classList.add('active'); } else if(tab==='polls'){ document.getElementById('tab-polls').classList.add('active'); document.getElementById('polls-view').classList.add('active'); renderPolls(); } else if(tab==='admin' && currentUser?.isAdmin){ document.getElementById('tab-admin').classList.add('active'); document.getElementById('admin-view').classList.add('active'); loadAdminData(); } }
-    function createConfetti() { const canvas=document.getElementById('confetti'); const ctx=canvas.getContext('2d'); canvas.width=window.innerWidth; canvas.height=window.innerHeight; let particles=[]; for(let i=0;i<80;i++){ particles.push({x:canvas.width/2,y:canvas.height/2,vx:(Math.random()-0.5)*12,vy:(Math.random()-1)*12-5,color:`hsl(${Math.random()*360},70%,60%)`,size:Math.random()*6+3,life:1}); } function animate(){ ctx.clearRect(0,0,canvas.width,canvas.height); particles=p=>p.filter(p=>p.life>0); particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.3; p.life-=0.02; ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.size,p.size); }); if(particles.length) requestAnimationFrame(animate); } animate(); setTimeout(()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); },1500); }
+        // ==================== APP FUNCTIONS ====================
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            
+            if (tab === 'create') {
+                document.getElementById('tab-create').classList.add('active');
+                document.getElementById('create-view').classList.add('active');
+            } else {
+                document.getElementById('tab-polls').classList.add('active');
+                document.getElementById('polls-view').classList.add('active');
+                renderPolls();
+            }
+        }
 
-    // Обработчики форм
-    document.getElementById('login-form-element')?.addEventListener('submit', async(e)=>{ e.preventDefault(); const un=document.getElementById('login-username').value.trim(); const pw=document.getElementById('login-password').value; try{ await login(un,pw); showApp(); initPollsListener(); showToast(`Добро пожаловать, ${un}`); if(currentUser?.isAdmin) switchTab('admin'); else switchTab('polls'); }catch(err){ document.getElementById('login-error').querySelector('span:last-child').innerText=err.message; document.getElementById('login-error').classList.add('show'); } });
-    document.getElementById('register-form-element')?.addEventListener('submit', async(e)=>{ e.preventDefault(); const un=document.getElementById('reg-username').value.trim(); const pw=document.getElementById('reg-password').value; const conf=document.getElementById('reg-confirm').value; if(pw!==conf){ showToast('Пароли не совпадают','error'); return; } try{ await register(un,pw); showApp(); initPollsListener(); showToast('Аккаунт создан!'); switchTab('polls'); }catch(err){ document.getElementById('register-error').querySelector('span:last-child').innerText=err.message; document.getElementById('register-error').classList.add('show'); } });
-    document.getElementById('poll-form')?.addEventListener('submit', async(e)=>{ e.preventDefault(); if(!currentUser) { showToast('Авторизуйтесь','error'); return; } const q=document.getElementById('question-input').value.trim(); const opts=Array.from(document.querySelectorAll('.option-input')).map(inp=>inp.value.trim()).filter(v=>v); if(opts.length<2){ showToast('Минимум 2 варианта','error'); return; } const newPoll = { question:q, options: opts.map(t=>({text:t, votes:0})), authorId:currentUser.id, authorName:currentUser.username, createdAt:Date.now(), totalVotes:0 }; const ok = await savePollToFirebase(newPoll); if(ok){ showToast('Опрос создан!','success'); document.getElementById('poll-form').reset(); document.getElementById('options-container').innerHTML=`<div class="option-input-wrapper"><div class="option-number">1</div><input type="text" class="option-input" placeholder="Вариант 1" required></div><div class="option-input-wrapper"><div class="option-number">2</div><input type="text" class="option-input" placeholder="Вариант 2" required></div>`; switchTab('polls'); } else showToast('Ошибка','error'); });
+        function addOption() {
+            const container = document.getElementById('options-container');
+            const count = container.children.length + 1;
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = 'option-input-wrapper';
+            wrapper.innerHTML = `
+                <div class="option-number">${count}</div>
+                <input type="text" class="option-input" placeholder="Вариант ${count}" required>
+                <button type="button" class="btn btn-danger btn-icon" onclick="removeOption(this)">×</button>
+            `;
+            container.appendChild(wrapper);
+        }
 
-    // Старт приложения
-    async function start() { const stored = localStorage.getItem('currentUser'); if(stored) { try{ const u = JSON.parse(stored); const usersFresh = await loadUsersFromFirebase(); const valid = usersFresh.find(x=>x.id===u.id); if(valid && valid.password) { currentUser = { id:valid.id, username:valid.username, isAdmin:valid.isAdmin||false }; if(firebaseReady) { const snap = await database.ref(`userVotes/${currentUser.id}`).once('value'); if(snap.val()) userVotes = snap.val(); } showApp(); initPollsListener(); if(currentUser.isAdmin) updateAdminTab(); else document.getElementById('tab-admin')?.classList.add('hidden'); } else { localStorage.removeItem('currentUser'); showAuth(); } } catch(e){ showAuth(); } } else { showAuth(); } await initAdminAndUsers(); if(!currentUser && firebaseReady) showLogin(); }
-    start();
-    window.showLogin=showLogin; window.showRegister=showRegister; window.switchTab=switchTab; window.addOption=addOption; window.removeOption=function(b){ let w=b.parentElement; if(document.getElementById('options-container').children.length>2) w.remove(); else showToast('Минимум 2 варианта','error'); updateOptionNumbers(); }; window.vote=vote; window.deletePoll=deletePoll; window.toggleAdmin=toggleAdmin; window.loadAdminData=loadAdminData;
-</script>
+        function removeOption(btn) {
+            const wrapper = btn.parentElement;
+            const container = document.getElementById('options-container');
+            if (container.children.length > 2) {
+                wrapper.remove();
+                updateOptionNumbers();
+            } else {
+                showToast('Минимум 2 варианта', 'error');
+            }
+        }
+
+        function updateOptionNumbers() {
+            document.querySelectorAll('.option-number').forEach((num, idx) => {
+                num.textContent = idx + 1;
+            });
+        }
+
+        // Create poll
+        document.getElementById('poll-form')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentUser) {
+                showToast('Необходимо авторизоваться', 'error');
+                return;
+            }
+            
+            const question = document.getElementById('question-input').value.trim();
+            const optionInputs = document.querySelectorAll('.option-input');
+            const options = Array.from(optionInputs).map(input => ({
+                text: input.value.trim(),
+                votes: 0
+            })).filter(opt => opt.text);
+
+            if (options.length < 2) {
+                showToast('Добавьте минимум 2 варианта ответа', 'error');
+                return;
+            }
+
+            updateSyncStatus('syncing');
+
+            const poll = {
+                question,
+                options,
+                authorId: currentUser.id,
+                authorName: currentUser.username,
+                createdAt: Date.now(),
+                totalVotes: 0
+            };
+
+            const saved = await savePoll(poll);
+            
+            if (saved) {
+                showToast('Опрос опубликован!', 'success');
+            }
+            
+            // Reset form
+            e.target.reset();
+            document.getElementById('options-container').innerHTML = `
+                <div class="option-input-wrapper">
+                    <div class="option-number">1</div>
+                    <input type="text" class="option-input" placeholder="Вариант 1" required>
+                </div>
+                <div class="option-input-wrapper">
+                    <div class="option-number">2</div>
+                    <input type="text" class="option-input" placeholder="Вариант 2" required>
+                </div>
+            `;
+            
+            setTimeout(() => switchTab('polls'), 500);
+        });
+
+        function renderPolls() {
+            const container = document.getElementById('polls-container');
+            
+            if (polls.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <h3>Пока нет опросов</h3>
+                        <p>Создайте первый опрос во вкладке "Создать"</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = polls.map(poll => {
+                const hasVoted = votes[poll.id] !== undefined;
+                const isOwner = currentUser && poll.authorId === currentUser.id;
+                const userVoteIndex = votes[poll.id];
+                const maxVotes = Math.max(...poll.options.map(o => o.votes));
+                
+                const dateStr = poll.createdAt ? new Date(poll.createdAt).toLocaleDateString('ru-RU') : '';
+                
+                return `
+                    <div class="poll-card" data-id="${poll.id}">
+                        ${isOwner ? `<button class="delete-btn" onclick="deletePoll('${poll.id}')" title="Удалить мой опрос">×</button>` : ''}
+                        
+                        <div class="poll-header">
+                            <div class="poll-title">${escapeHtml(poll.question)}</div>
+                            <div class="poll-meta">
+                                <div class="poll-author">
+                                    <div class="author-avatar">${poll.authorName ? poll.authorName[0].toUpperCase() : '?'}</div>
+                                    <span>${escapeHtml(poll.authorName || 'Unknown')}</span>
+                                </div>
+                                <span class="poll-date">${dateStr}</span>
+                                ${isOwner ? '<span class="poll-status status-owner">Мой</span>' : ''}
+                                ${hasVoted && !isOwner ? '<span class="poll-status status-voted">Проголосовано</span>' : ''}
+                                ${!hasVoted && !isOwner ? '<span class="poll-status status-active">Активен</span>' : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="options-list">
+                            ${poll.options.map((option, idx) => {
+                                const percentage = poll.totalVotes > 0 
+                                    ? Math.round((option.votes / poll.totalVotes) * 100) 
+                                    : 0;
+                                const isWinner = option.votes === maxVotes && option.votes > 0;
+                                const isSelected = idx === userVoteIndex;
+                                
+                                return `
+                                    <div class="option-item ${hasVoted ? 'disabled' : ''} ${isSelected ? 'selected' : ''}" 
+                                         onclick="${hasVoted ? '' : `vote('${poll.id}', ${idx})`}">
+                                        <div class="option-progress" style="width: ${hasVoted ? percentage : 0}%"></div>
+                                        <div class="option-content">
+                                            <span class="option-text">
+                                                ${escapeHtml(option.text)}
+                                                ${isWinner && hasVoted ? ' 👑' : ''}
+                                                ${isSelected ? ' ✓' : ''}
+                                            </span>
+                                            <div class="option-stats">
+                                                ${hasVoted ? `
+                                                    <span class="vote-count">${option.votes}</span>
+                                                    <span class="percentage">${percentage}%</span>
+                                                ` : '<span style="opacity: 0.5; font-size: 0.8rem;">Нажмите для голоса →</span>'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        
+                        <div class="total-votes">
+                            Всего голосов: <strong>${poll.totalVotes}</strong>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            setTimeout(() => {
+                document.querySelectorAll('.option-progress').forEach(bar => {
+                    bar.style.width = bar.style.width;
+                });
+            }, 100);
+        }
+
+        async function vote(pollId, optionIndex) {
+            if (!currentUser) {
+                showToast('Войдите, чтобы голосовать', 'error');
+                return;
+            }
+            
+            if (votes[pollId] !== undefined) return;
+            
+            const poll = polls.find(p => p.id === pollId);
+            if (!poll) return;
+            
+            if (poll.authorId === currentUser.id) {
+                showToast('Нельзя голосовать в своём опросе', 'error');
+                return;
+            }
+            
+            // Обновляем локально
+            poll.options[optionIndex].votes++;
+            poll.totalVotes++;
+            
+            votes[pollId] = optionIndex;
+            localStorage.setItem('votes', JSON.stringify(votes));
+            
+            // Обновляем в Firebase
+            await updatePoll(pollId, {
+                options: poll.options,
+                totalVotes: poll.totalVotes
+            });
+            
+            if (event) {
+                const rect = event.target.getBoundingClientRect();
+                createConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            }
+            
+            showToast('Голос засчитан!', 'success');
+            renderPolls();
+        }
+
+        async function deletePoll(id) {
+            const poll = polls.find(p => p.id === id);
+            if (!poll || poll.authorId !== currentUser?.id) {
+                showToast('Нет прав для удаления', 'error');
+                return;
+            }
+            
+            if (!confirm('Удалить этот опрос? Это действие нельзя отменить.')) return;
+            
+            await deletePollFromFirebase(id);
+            delete votes[id];
+            localStorage.setItem('votes', JSON.stringify(votes));
+            
+            renderPolls();
+            showToast('Опрос удалён', 'success');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.className = `toast ${type}`;
+            toast.querySelector('.toast-icon').textContent = type === 'success' ? '✓' : '✕';
+            toast.querySelector('.toast-message').textContent = message;
+            
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Initialize
+        init();
+    </script>
 </body>
 </html>
+
